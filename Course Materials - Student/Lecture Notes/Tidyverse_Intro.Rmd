@@ -1,0 +1,103 @@
+---
+title: "Welcome to the Tidyverse"
+output: pdf_document
+fontsize: 14pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+\section{What is the Tidyverse?}
+
+\includegraphics[width = 1in]{./Images/hex-tidyverse.png} \hspace{1cm}
+\includegraphics[height = 1in]{./Images/data-science.png}
+
+Because **R** is open-source, rather than a product released by a company such as SAS or Matlab, it relies heavily on user-created packages for its evolution.
+
+The biggest revolution and modernization of **R** has come in the form of a collection of packages known as the **Tidyverse**.  The father of the Tidyverse, and author of its most famous packages, is Hadley Wickham.  However, many prominent statisticians and data scientists are now active contributors, including: Charlotte Wickham, Jenny Bryan, Yihui Xie, David Robinson, Julia Silge, and many many more.
+
+This week, you learned "Base R": everything we did in today's activity did not require any extra packages.  From now on, you will be learning everything through the lens of the Tidyverse.
+
+
+\section{Example}
+
+Consider the following dataset:
+
+```{r, echo = FALSE}
+data(mtcars)
+```
+
+```{r}
+str(mtcars)
+```
+
+Suppose we wish to accomplish the following edits to this data:
+\begin{enumerate}
+  \item Drop the variables `qsec` and `vs`, because we don't need them.
+  \item Include only automatic cars (`am` = 1)
+  \item Round the miles per gallon and weight of the cars to the nearest whole number.
+  \item Define a "fast car" to be one with high gear, cylinders, or horsepower. Make a variable for this, and count up how many cars are fast.
+\end{enumerate}
+
+Here is how we would do it in Base R:
+
+```{r}
+data(mtcars)
+
+mtcars <- mtcars[, -c(7,8)]
+
+auto <- mtcars$am == 1
+mtcars <- mtcars[auto, ]
+
+mtcars$mpg <- round(mtcars$mpg)
+mtcars$wt <- round(mtcars$wt)
+
+mtcars$speed <- rep("slow", nrow(mtcars))
+
+fast_cars <- (mtcars$gear == 5 | mtcars$cyl == 8 | mtcars$hp > 200)
+
+mtcars$speed[fast_cars] <- "fast"
+
+mtcars$speed <- factor(mtcars$speed)
+summary(mtcars$speed)
+```
+
+\pagebreak
+Here is the Tidy version:
+
+```{r}
+data(mtcars)
+
+mtcars <- mtcars %>% 
+  select(-qsec, -vs) %>%
+  filter(am == 1) %>%
+  mutate_at(
+    vars(mpg, wt), 
+    funs(round)
+  ) %>%
+  mutate(
+    speed = case_when(
+      gear == 5 | cyl == 8 | hp > 200 ~ "fast",
+      TRUE ~ "slow"
+    )
+  )
+
+mtcars %>% count(speed)
+```
+
+
+\section{Advantages}
+
+The primary reasons to learn R via the Tidyverse, in my opinion:
+
+\begin{itemize}
+  \item {\bf Readability}: Code in the tidy style can be read more easily like an English sentence.
+  \item {\bf Reproducibility}: When the flow is clearer, it is easier to build sequences that can be re-applied to new data.
+  \item {\bf Presentation}: Tidy tools emphasize nice clean output. (RMarkdown is considered part of the Tidyverse!)
+  \item {\bf Culture:} The guiding principles behind Tidyverse packages emphasize sharing of code and data, responsible use of statistics (reproducibility!), and collaboration.
+  \item {\bf Community}: The Tidyverse R community is very active, diverse and welcoming. It is easy to get involved, and even the big names are happy to help beginners learn.
+\end{itemize}
+
+

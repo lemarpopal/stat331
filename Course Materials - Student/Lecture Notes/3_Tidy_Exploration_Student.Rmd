@@ -1,0 +1,297 @@
+---
+title: "Exploring Data with the Tidyverse"
+author: Kelly Bodwin
+date: 
+output: html_document
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(fig.width=6, fig.height=4, fig.align = 'center', fig.path='Figs/',
+                      echo=TRUE, warning=FALSE, message=FALSE,eval=TRUE)
+```
+
+# Examine the Data
+
+## The Dataset
+
+- Information about passengers on the HMS Titanic
+
+```{r, include = FALSE}
+library(tidyverse)
+titanic = read.csv('https://raw.githubusercontent.com/kbodwin/ShinyLabs/master/Datasets/titanic.csv')
+```
+
+```{r}
+head(titanic)
+```
+
+## What do we know?
+
+```{r}
+str(titanic)
+```
+
+
+- How many passengers were there?
+- What information did we collect about them?
+
+
+```{r}
+titanic[118,]
+```
+
+Tell me about this person!
+
+
+# Get a feel for the variables
+
+## How many passengers survived?
+
+```{r}
+titanic %>% count(Survived)
+```
+
+- Note that this information was only displayed, not saved!
+
+- If you wanted to store your answer for later use...
+
+```{r}
+# base R
+num_survived <- sum(titanic$Survived == 1)
+
+# Tidyverse
+num_survived <-  titanic %>% 
+  tally(Survived == 1) %>% 
+  pull(n)
+## try it without the "pull(n)" step.  What is the difference?
+
+```
+
+
+```{r, echo = FALSE}
+titanic %>%
+  ggplot(aes(x = Survived)) + geom_bar()
+```
+
+- Yikes, that's ugly!
+
+- Goal: Recode Survived to be a factor with values "Lived", "Died".
+
+```{r}
+titanic <- titanic %>%   # we are rewriting "titanic"
+  mutate(
+    Survived = factor(Survived, 
+                      levels = c(0,1), # old values
+                      labels = c("Died", "Lived") # new values
+    )
+  )
+
+# by naming the new variable "Survived", we overwrite the old one
+
+```
+
+- Check yourself: Did that work?
+
+```{r}
+titanic %>% count(Survived)
+```
+
+Make a better plot:
+
+```{r, echo = FALSE}
+
+```
+
+
+## Your Turn
+
+- How many passengers were in each travel class?
+- How many of each gender?
+- How many of each gender *within* each travel class?  Make a plot.
+
+
+# Research question: Looking at specific individuals.
+
+## Did the person with the most expensive ticket survive?
+
+
+```{r}
+titanic %>% top_n(1, Fare)
+# arrange(Fare) is okay too!
+# But it prints ALL the answers
+
+```
+
+- Why did this give us 3 answers instead of 1 like we asked?
+
+
+## Did the youngest person in third class survive?
+
+```{r}
+titanic %>% filter(Pclass == 3) %>% top_n(1, desc(Age))
+
+```
+
+## Your turn
+
+- Did the richest woman in second class above the age of 30 survive?
+
+
+# Research question: What explains why people lived or died?
+
+## Gender
+
+- Were men more likely to die than women?
+
+```{r}
+titanic %>% count(Sex, Survived)
+```
+
+- Hmmmm.... maybe.  
+- (Bonus: what statistical test would you use for this question?)
+
+
+- What percent of passengers survived in each group (men vs women)?
+
+```{r}
+titanic %>% 
+  group_by(Sex) %>%
+  summarize(pct_survived = mean(Survived == "Lived"))
+
+```
+- (Think:  Why did "mean" work?)
+- (Try it:  What does the output look like if you remove the last line and pipe?)
+
+
+- We can also visualize the data to answer our question.  Which plot will address the question better?
+
+
+```{r}
+
+titanic %>% 
+  ggplot(aes(x = Survived, fill = Sex)) + geom_bar()
+
+titanic %>% 
+  ggplot(aes(x = Sex, fill = Survived)) + geom_bar()
+
+titanic %>% 
+  ggplot(aes(x = Survived)) + geom_bar() + facet_wrap(~Sex)
+
+titanic %>% 
+  ggplot(aes(x = Sex)) + geom_bar() + facet_wrap(~Survived)
+```
+
+
+- How can we best improve this plot to strengthen our point?
+
+
+```{r}
+
+
+titanic %>% 
+  ggplot(aes(x = Survived, fill = Sex)) + geom_bar(position = "fill")
+
+titanic %>% 
+  ggplot(aes(x = Survived, fill = Sex)) + geom_bar(position = "dodge")
+
+
+```
+
+- What do you conclude?
+
+## Your Turn
+
+- Was one travel class more likely to survive than another?
+- What is the relationship between gender, travel class, and survival?
+
+
+# Extra practice
+
+## Your turn
+
+Try to use the same thought process with boxplots to answer these questions:
+
+- Is there a price difference across the three classes?
+- Is there an age difference across the three classes?
+
+
+# Complex Research Question: What can we say about family, wealth, and survival?
+
+## My thought process:
+
+I'm not sure why we count siblings/spouses and parents/children separately.  Let's make new variables with clearer measurements.
+
+```{r}
+titanic <- titanic %>% mutate(
+  Num.Family = Siblings.Spouses.Aboard + Parents.Children.Aboard,
+  Has.Family = Num.Family > 0
+)
+```
+
+
+Check that my variables worked
+
+```{r}
+titanic %>% 
+  select(Num.Family, Has.Family) %>% 
+  summary()
+```
+
+
+Wealth can be measured in two ways:  Class, or Fare.  I would like to come up with categories based on these.
+
+First, I want to know what the spread of Fare is.
+
+```{r}
+summary(titanic$Fare)
+```
+
+Alright, so most people paid less thatn \$31, and some paid less than \$8.
+
+I think I will call people "Rich" if they are in 1st class or paid over \$100, and "Poor" if they are in third class or paid less than \$8.
+
+```{r}
+titanic <- titanic %>% mutate(
+  wealth = case_when(
+    Pclass == 3 | Fare < 8 ~ "Poor",
+    Pclass == 1 | Fare > 100 ~ "Rich",
+    TRUE ~ "Medium"
+  ),
+  wealth = factor(wealth, levels = c("Poor", "Medium", "Rich")) # reorder
+)
+```
+
+
+Let me double check that my definitions split the population reasonably.
+
+```{r}
+titanic %>% count(wealth)
+```
+
+Great, seems okay!
+
+Now I need a plot.  I think I would like to compare the number of family members for the various wealth levels, divided by whether they lived or died.
+
+```{r, echo = FALSE}
+
+titanic %>% 
+  ggplot(aes(x = wealth, y = Num.Family, fill = Survived)) + geom_boxplot()
+
+```
+
+Hmmmm not so great.  Perhaps simply if they had family or not would make more sense.
+
+
+```{r, echo = FALSE}
+
+titanic %>% 
+  ggplot(aes(x = Has.Family, fill = Survived)) + geom_bar(position = "fill") + facet_wrap(~wealth)
+
+```
+
+
+What do you conclude?
+
+## YOUR TURN
+
+Can you come up with different ways to address this question?

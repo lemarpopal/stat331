@@ -1,0 +1,316 @@
+---
+title: "Tidy Data; gathering and spreading"
+author: Kelly Bodwin
+date: 
+output: 
+  ioslides_presentation:
+    fontsize: 10pt
+    incremental: true
+  # beamer_presentation:
+  #   theme: "boxes"
+  #   colortheme: "beaver"
+  #   fonttheme: "structurebold"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(fig.width=6, fig.height=4, fig.align = 'center', fig.path='Figs/',
+                      echo=TRUE, warning=FALSE, message=FALSE,eval=TRUE)
+
+library(tidyverse)
+
+hiphop <- read.csv("https://www.dropbox.com/s/1qqyshx5ikt9zoc/hiphop.csv?dl=1")
+```
+
+# Tidy data, and grouping
+
+## A toy example dataset
+
+```{r, echo = FALSE}
+set.seed(191)
+dat <- data.frame(group = rep(c("a", "b", "c"), 3), meas1 = runif(9), meas2 = runif(9))
+dat
+```
+
+## Tidy data
+
+- The dataset (data frame) is ...
+
+## Tidy data
+
+- The dataset is `dat`
+- The variables are ...
+
+## Tidy data
+
+- The dataset is `dat`
+- The variables are `group`, `meas1`, `meas2`
+- Observations consist of ...
+
+## Tidy data
+
+- The dataset is `dat`
+- The variables are `group`, `meas1`, `meas2`
+- Observations consist of two measurements for each group.  There are three such observations in the data for each group.
+
+## Group_by makes new datasets (sort of)
+
+```{r}
+dat %>% top_n(2, meas1)
+
+dat %>% group_by(group) %>% top_n(2, meas2)
+```
+
+## Summarize "squishes" these datasets
+
+- But we have to tell it how to combine all the observations of `meas`.  Mean? Median? Sum? Max?
+- All variables we can't "squish" get dropped
+```{r}
+
+dat %>% group_by(group) %>% 
+  summarize(avg_meas = mean(meas1)) %>%
+  top_n(1, avg_meas)
+
+```
+## To squish more than one variable:  _all
+
+```{r, error = TRUE}
+dat %>% group_by(group) %>% 
+  summarize_all(mean)
+```
+
+## To squish more than one variable:   _if
+
+```{r}
+dat %>% group_by(group) %>% 
+  summarize_if(is.numeric, funs(mean, median))
+```
+
+## To squish more than one variable:  _at 
+
+```{r}
+dat %>% group_by(group) %>% 
+  summarize_at(vars(meas1, meas2), funs(mean, median))
+```
+
+## Group_by versus distinct
+
+```{r}
+dat %>% group_by(group) %>% summarize(avg_meas = mean(meas1))
+dat %>% distinct(group, .keep_all = TRUE)
+```
+
+
+# Spread
+
+# Question: What words are more preferred by hiphop fans than nonfans?
+
+## On the lab assignment, used full_join
+```{r}
+fans <- hiphop %>% 
+  filter(hiphop > 7) %>%
+  group_by(word) %>% 
+  summarize(avg_fam = mean(familiarity))
+
+not_fans <- hiphop %>% 
+  filter(hiphop < 4) %>%
+  group_by(word) %>% 
+  summarize(avg_fam = mean(familiarity))
+
+full_join(fans, not_fans)
+```
+
+## Automatically renames columns if "by" is specified
+
+```{r}
+full_join(fans, not_fans, by = "word")
+```
+
+
+## Let's see the answer!
+
+```{r}
+new <- full_join(fans, not_fans, by = "word") %>%
+  mutate(
+    diff = avg_fam.x - avg_fam.y
+  ) 
+
+new %>% arrange(diff)
+```
+
+
+## But, a more elegant approach:
+```{r}
+fans <- hiphop %>% 
+  mutate(
+    is_fan = case_when(
+      hiphop > 7 ~ "Fan",
+      hiphop < 3 ~ "Not Fan",
+      TRUE ~ "Sorta Fan"
+    ),
+    is_fan = factor(is_fan, levels = c("Fan", "Sorta Fan", "Not Fan"))
+  ) %>% 
+  select(word, familiarity, is_fan, hiphop, age)
+ 
+head(fans)
+```
+
+## This is nice for plotting...
+```{r}
+fans %>% 
+  ggplot(aes(x = is_fan, y = age, fill = is_fan)) + geom_boxplot()
+```
+
+## And for grouping and summarizing...
+```{r}
+fans %>% 
+  group_by(is_fan) %>%
+  summarize(avg_age = mean(age))
+```
+
+## But what about making a new variable?
+```{r}
+head(fans)
+```
+
+## But what about making a new variable?
+```{r, eval = FALSE}
+fans %>% mutate(
+  diff = Fan - `Not Fan`
+)
+
+```
+
+## What went wrong?
+```{r, error = TRUE}
+fans %>% mutate(
+  diff = Fan - `Not Fan`
+)
+
+```
+
+## There is no way to do this by subtracting variables.
+```{r, eval = FALSE}
+fans %>% mutate(
+  diff = ....?
+)
+
+```
+
+## (Not even in Base R)
+```{r, eval = FALSE}
+fans$diff <- 1
+
+yes_fan <- fans$is_fan == "Fan"
+fans$diff[yes_fan] <-  ...?
+```
+
+## Spread, to the rescue!
+
+```{r}
+fans %>% 
+  group_by(is_fan, word) %>%
+  summarize(avg_fam = mean(familiarity)) %>% 
+  ### <b>
+  spread(key = is_fan, value = avg_fam) 
+### </b>
+ 
+```
+
+## Spread
+
+- `key` is the *categorical variable* (i.e., a *factor*) that is going to convert to variable names
+- `value` is any variable, usually quantitative, that is measured for each *key* category
+
+## Now our mutate() works!
+```{r}
+fans <- fans %>% 
+  group_by(is_fan, word) %>%
+  summarize(avg_fam = mean(familiarity)) %>% 
+  spread(key = is_fan, value = avg_fam) %>%
+  ### <b>
+  mutate(
+    diff = Fan - `Not Fan`
+  )### </b>
+```
+
+## Final answer:
+```{r}
+fans %>% top_n(1, diff)
+fans %>% top_n(1, desc(diff))
+```
+
+# Gather
+
+# Question:  Do men and women prefer different genres of music?
+
+## Let's narrow down the data a bit
+
+```{r}
+
+genres <- hiphop %>% 
+  distinct(subj, .keep_all = TRUE) %>%
+  group_by(sex) %>%
+  summarize_at(
+    vars(classical, folk, rock, country, pop, alternative, hiphop), 
+    funs(mean))
+  
+```
+
+## Plotting
+
+- I'd like to plot the 7 genres scores, for men and for women.
+- But how???
+
+```{r, eval = FALSE}
+genres %>% ggplot(fill = sex, y = ...?, x = ...?)
+```
+
+## Gather to the rescue!
+```{r}
+genres %>% gather()
+```
+
+## Let's give the columns better names
+```{r}
+genres %>% gather(key = genre, value = avg_score)
+```
+
+## Gather
+
+- `key` is the name you want to give the *categorical variable* whose values will be the former variable names
+- `value` is name you want to give the variable of collapsed values for all categories
+
+## Keep the column "sex" from being gathered
+```{r}
+genres %>% gather(key = genre, value = avg_score, -sex)
+```
+
+## Now plotting is easy!
+```{r}
+genres %>% gather(key = genre, value = avg_score, -sex) %>%
+  ggplot(aes(x = genre, y = avg_score, fill = sex)) + geom_col(position = "dodge")
+```
+
+# Your Turn
+
+## Re-create the following plot.  
+
+```{r, echo = FALSE}
+hiphop %>% 
+  filter(ethnic != "black") %>%
+  distinct(subj, .keep_all = TRUE) %>%
+  mutate(
+    has_black_friends = blackMove > 0
+  ) %>%
+  select(jayz, barkley, boondocks, monique, bieber, has_black_friends) %>%
+  gather(key = culture_question, value = score, -has_black_friends) %>%
+  group_by(culture_question, has_black_friends) %>%
+  summarize(avg_score = mean(score)) %>% 
+  ungroup() %>%
+  ggplot(aes(x = culture_question, y = avg_score, fill = has_black_friends)) + geom_col(position = "dodge") +
+  ggtitle("Do non-black people with black friends know more about black culture?")
+```
+
+Turn in an html file with your source code and final plot for your in-class assignment.
+
+

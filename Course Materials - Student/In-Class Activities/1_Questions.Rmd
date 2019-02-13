@@ -1,0 +1,113 @@
+---
+title: "Questions for Class Activity 1"
+author: "YOUR NAME HERE"
+date: "January 7, 2019"
+output: html_document
+---
+
+1a) How many students have filled out the survey so far?
+
+```
+
+WRITE YOUR ANSWER HERE
+
+```
+
+1b) What possible issues do you see with the way your survey data was stored in the dataset `survey_orig`?
+
+```
+
+WRITE YOUR ANSWER HERE
+
+```
+
+2a) Why do you think we might have taken made a new dataset, `free_response`?
+
+```
+
+WRITE YOUR ANSWER HERE
+
+```
+
+2b) Explain in words what is different about the dataset `survey` as compared to `survey_orig`.
+
+```
+
+WRITE YOUR ANSWER HERE
+
+```
+
+### Questions:
+
+3a) What did you learn about majors and minors of 331 students?
+
+```
+
+WRITE YOUR ANSWER HERE
+
+```
+
+
+3b) What did you learn about Kardashian preference and school year?
+
+```
+
+WRITE YOUR ANSWER HERE
+
+```
+
+
+3c) What did you learn about the relationship between hot dog definitions, political preference, and major?
+
+```
+
+WRITE YOUR ANSWER HERE
+
+```
+
+
+### Questions:
+
+4a) Use your console to look at `survey_courses_1` and `survey_courses_2`.  Explain the difference between these.
+
+
+```
+
+WRITE YOUR ANSWER HERE
+
+```
+
+
+4b) Why might we want two different styles of data?
+
+
+```
+
+WRITE YOUR ANSWER HERE
+
+```
+
+4c) What did you learn about coursework and majors?
+
+
+```
+
+WRITE YOUR ANSWER HERE
+
+```
+
+5a) What did you observe about the opinions of Cal Poly students over their course of study?
+
+```
+
+WRITE YOUR ANSWER HERE
+
+```
+
+5b) What fun things did you notice in the word clouds?
+
+```
+
+WRITE YOUR ANSWER HERE
+
+```

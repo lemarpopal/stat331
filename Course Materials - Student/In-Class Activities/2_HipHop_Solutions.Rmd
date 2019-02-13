@@ -1,0 +1,89 @@
+---
+title: "Activity: HipHop Lyrics"
+output: pdf_document
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                      echo=TRUE, warning=FALSE, message=FALSE,eval=TRUE)
+
+```
+
+
+# Instructions
+
+Please submit an HTML document created using R Markdown, but you are more than welcome to test your code out in an R script first.  **Even if a question does not say "write code," you should write code for your answer!**
+
+The data set "hiphop" contains results from a study conducted by a linguist at the University of Minnesota.  The researcher was interested in predicting musical taste based on familiarity with African American English (AAE).  168 subjects participated in the study, and each was asked to define 64 different AAE terms.  The definitions given were used to create a "familiarity" score for each subject for each term.  This score quantifies how well the subject knew the term on a scale of 1-5 (1 = not at all, 5 = very well).  Before tackling the problems, **study the information on the following website**, which includes a description of each variable:
+
+[http://conservancy.umn.edu/bitstream/handle/11299/116327/5/explanationAAEHiphopChesley.txt](http://conservancy.umn.edu/bitstream/handle/11299/116327/5/explanationAAEHiphopChesley.txt)
+
+ _BE SURE TO SAVE YOUR WORK REGULARLY!!!_
+ 
+# Exercises
+
+1.  Copy the following code into an R chunk, to load the data and gain access to the tidyverse package.
+
+```{r, echo = TRUE}
+hiphop <- read.csv("https://raw.githubusercontent.com/kbodwin/STAT-331/master/In-Class%20Activities/Data/hiphop.csv?token=AVHCwTQaeq5UylWJxCcNN8qYww6UIaLqks5cP75ewA%3D%3D")
+library(tidyverse)
+```
+
+
+2. What are the variable names and types in this dataset?  Give a general overview, not a full list.
+```{r}
+names(hiphop) 
+str(hiphop)
+```
+
+3. What are the dimensions of the data set?  Do the dimensions make sense considering the information given above about the study?  Explain.  _Hint: Examine the subj and word variables._
+```{r}
+#This data set has 10752 observations.  
+#This is because there are 168 subjects who 
+#are asked about 64 words (168*64=10752)
+dim(hiphop) 
+```
+
+4. Display the 64 AAE words that were tested, with no duplicates.  
+```{r}
+#table(hiphop$word)
+unique(hiphop$word)
+```
+
+5. Get an overview of the hiphop data set. Which variables contain missing values?
+```{r}
+#numPreferredArtists and numOverallArtists having missing values
+summary(hiphop)
+```
+
+6. How many missing values are in the whole data set?
+```{r}
+#numPreferredArtists and numOverallArtists having missing values
+sum(is.na(hiphop))
+```
+
+7.  Calculate the mean and standard deviation of numPreferredArtists.  _Hint:Because this variable has missingvalues, you will need to set the "na.rm" argument equal to TRUE._
+```{r}
+mean(hiphop$numPreferredArtists,na.rm=T)
+sd(hiphop$numPreferredArtists,na.rm=T)
+```
+
+8. Write code to create a new data frame called subject19 which only contains information for subject 19.  What are the dimensions of this new data frame?
+```{r}
+library(dplyr)
+subject19<-filter(hiphop,subj=="p19")
+#alternative to loading in the library
+#subject19<-dplyr::filter(hiphop,subj=="p19")
+```
+
+9.  Display the familarity variable of the subject 19 data frame in two different ways.
+```{r}
+subject19$familiarity
+subject19[,33]
+subject19[,"familiarity"]
+```
+
+10. Write code to order this new data frame by familiarity from largest to smallest,  retaining this sorting in the subject19 data frame (ie, you should not print out the data frame).
+```{r}
+subject19<-arrange(subject19,desc(familiarity))
+```

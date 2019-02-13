@@ -1,0 +1,241 @@
+---
+title: "Building Blocks of Coding"
+author: "Kelly Bodwin"
+date: "January 14/15, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+There are a few major ideas that appear in almost any coding language, and R is no exception.  Today you will practice using typical programming building blocks in R.
+
+We will do some examples using the dataset `mtcars()` in R.
+
+```{r}
+data(mtcars)
+summary(mtcars)
+```
+
+
+\section{Loops}
+
+A **loop** is a shorthand way of asking the computer to do a certain calculation several times, usually with a slight difference between each repetition.  For example, consider the following code chunk:
+
+```{r}
+for(i in 1:5){
+  print(i)
+}
+```
+
+Here, we stepped through the numbers 1 to 5, and printed each one out.
+
+We need not always step through numbers in order.  A loop can loop through any vector you provide.  For example,
+
+```{r}
+my_vec <- c("Mary", "had", "a", "little", "lamb")
+
+for(i in my_vec){
+  print(i)
+}
+```
+
+The loops you see above are called **for loops**, because they do a certain process *for* each value.
+
+Another type of loop is a **while loop**, which keeps repeating itself as long as a certain condition is met.  For example,
+
+```{r}
+i <- 1
+
+while(i < 5){
+  print(i)
+  i <- i + 5
+}
+```
+
+Be careful using while loops!  Consider the code below (which has been set NOT to run in this document).  What would happen if we ran it?
+
+```{r, eval = FALSE}
+i <- 1
+
+while(i < 5){
+  print(i)
+}
+```
+
+\subsection{apply}
+
+An alternative to loops in R is a set of functions based on `apply()`.  There are a few slightly different options for this approach:
+\begin{itemize}
+  \item `lapply()` does a calculation for every element of a list, vector, or matrix, and returns a list as the answer.
+  \item `sapply()` does a calculation for every element of a vector or matrix, and returns a vector as the answer.
+  \item `apply()` does a calculation for every row (1) or column (2) of a matrix or data frame, and returns a matrix or data frame as the answer
+\end{itemize}
+
+Suppose we want to round all our variables in `mtcars` to the nearest whole number.  The examples below will accomplish slightly different things.
+  
+```{r}
+
+lapply(mtcars, round)
+sapply(mtcars, round)
+
+apply(mtcars, 1, round)
+apply(mtcars, 2, round)
+```
+
+Explain why the following would give an error.
+
+```{r, eval = FALSE}
+
+apply(mtcars, round)
+
+```
+
+
+\subsection{The role of loops in R}
+
+As a rule, one should always avoid using loops in R if at all possible.
+
+Most functions in R are **vectorized}, meaning the calculation will automatically be applied to all the elements, if possible.  For example, the following is the easiest way to round the variables in mtcars to the nearest whole number!
+
+```{r}
+round(mtcars)
+```
+
+Sometimes, though, you will want to do something complex enough that you need to force the repetition.  In these cases, `apply()` is a better approach, and/or various Tidy tools you will learn later on.
+
+Typically, a *for loop* is only used in R for *simulation*: doing a calculation many times with different randomized data.  A *while loop* is usually only used for estimation: you do a calculation until your answer is consistent to within a certain error.  More on both of these later in the course!
+
+
+
+
+\section{Conditionals}
+
+As you start writing loops and longer code processes, you will find that you sometimes need to check if something is true or not before you proceed.  This is accomplished with `if()` and `else()` statements.  `if()` statements take a `TRUE/FALSE` condition as input, and proceed only if the result is `TRUE`.  For example,
+
+```{r}
+
+for(i in 1:5){
+  
+  if(i == 3){
+    
+    print(i)
+    
+  }
+
+}
+```
+
+The `else()` and `else if()` options, which always must come after an `if()`, will let you specify multiple things to check:
+
+```{r}
+for(i in 1:5){
+  
+  if(i == 3){
+    
+    print(i)
+    
+  }else if(i %% 2 == 0){
+    print(paste(i, "is an even number!"))
+  }else{
+    print("Boring number.")
+  }
+
+}
+```
+
+`if()` statements are not very common in basic data analysis; you are more likely to use these if you are doing fancier coding.  However, they can come in handy sometimes.
+
+Try to think through the following code, and guess what the output would be.
+
+```{r, eval = FALSE}
+for(i in 1:length(mtcars)){
+  
+  if(mtcars$am[i] == 0){
+    
+    my_mpg <- mtcars$mpg[i]
+    print(paste("Automatic car with", my_mpg, "miles per gallon."))
+    
+  }
+  
+}
+```
+
+\subsection{A word about formatting}
+
+Although "white space" - spaces, tabs, and new lines - does not matter to R, it is important to format your code in a way that is easy to read.  When using loops and conditionals, always make sure to "tab" everything inside the loop or conditional, so that it is easy to visually see which tasks are being repeated and/or done only under certain conditions.
+
+
+\section{Functions}
+
+As we have seen, R is made up of **functions**, which take **arguments**, do calculations behind the scenes, and return certain output.  An important skill in R coding is to write your own functions.  For example, consider the following:
+
+```{r}
+say_hi <- function(name){
+  
+  print(paste("Hello, ", name))
+  
+}
+
+say_hi("George")
+```
+
+Here, we wrote our own function, which we chose to name `say_hi`.  This function takes a string (`name`) as an argument, and prints out a nice hello message.  Once we have run the above code, we can use this function any time:
+
+```{r}
+say_hi("Martha")
+```
+
+Be careful, though - functions can do some strange things if you give them unexpected input! 
+
+```{r}
+say_hi(mtcars)
+```
+
+\subsection{Optional arguments}
+
+When writing a function, you can also specify an optional argument.  This is accomplished by supplying a default value for a certain argument: if the argument is supplied, the function uses the given value, and if not, it uses the default.  For example,
+
+```{r}
+say_hi <- function(name, greeting = "Hello"){
+  
+  print(paste(greeting, ", ", name))
+  
+}
+
+say_hi("George")
+say_hi("George", greeting = "Yo")
+```
+
+
+\subsection{Functions and repetition}
+
+Functions can be particularly useful when you want to do a complex process several times.  You can write a quick function outlining the steps, and then use loops or `apply()` to repeat your process.  For example,
+
+```{r}
+
+report_mpg <- function(mpg){
+    
+    print(paste("This car has", round(mpg), "miles per gallon."))
+  
+}
+
+sapply(mtcars$mpg[1:6], report_mpg)
+
+
+```
+
+\section{Sourcing scripts}
+
+As you write your own functions, for organizational reasons you may wish to store the ``source" code separately from your nice analysis in R Markdown or similar.  To do this, you can create a separate file, which you use to load in your functions before using them in the analysis.  For example,
+
+```{r}
+source("./say_hi.R")
+
+say_hi("Bob")
+```
+
+What do you think are the contents of the file `say_hi.R`?
+
+

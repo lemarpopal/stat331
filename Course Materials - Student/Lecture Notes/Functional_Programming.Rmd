@@ -1,0 +1,332 @@
+---
+title: "Functional Programming"
+author: Kelly Bodwin
+date: 
+output: 
+  ioslides_presentation:
+    fontsize: 10pt
+    incremental: true
+  # beamer_presentation:
+  #   theme: "boxes"
+  #   colortheme: "beaver"
+  #   fonttheme: "structurebold"
+---
+
+# The general idea
+
+```{r, include = FALSE}
+titanic <- read.csv("C:/Users/kbodwin/Dropbox/Teaching/331/Data/titanic.csv")
+library(tidyverse)
+library(lubridate)
+```
+
+## The general idea
+
+- What if you want to do something a whole bunch of times, or to every item in a list?  
+- We want to be as efficient as possible!
+
+```{r}
+print("99 bottles of pop on the wall, 
+      99 bottles of pop.  
+      Take one down, pass it around, 
+      98 bottles of pop on the wall.")
+print("98 bottles of pop on the wall, 
+      98 bottles of pop.  
+      Take one down, pass it around, 
+      97 bottles of pop on the wall.")
+
+###.... and so on...
+```
+
+## Evoution 1: Make R do the math
+
+```{r}
+i <- 99
+print(paste(i, "bottles of pop on the wall,", 
+            i, "bottles of pop.  Take one down, pass it around,", 
+            i - 1, "bottles of pop on the wall."))
+i <- i - 1
+print(paste(i, "bottles of pop on the wall,", 
+            i, "bottles of pop.  Take one down, pass it around,", 
+            i - 1, "bottles of pop on the wall."))
+
+###.... and so on...
+```
+
+## Evolution 2: Loop it!
+
+```{r}
+for(i in 99:95){
+  
+  print( 
+    paste(i, "bottles of pop on the wall,", 
+          i, "bottles of pop.  Take one down, pass it around,", 
+          i - 1, "bottles of pop on the wall.")
+  )
+
+  
+}
+```
+
+## Evolution 3: Write a function.
+
+```{r}
+pop_song <- function(i){
+  
+ paste(i, "bottles of pop on the wall,", 
+            i, "bottles of pop.  Take one down, pass it around,", 
+            i - 1, "bottles of pop on the wall.")
+  
+}
+
+for(i in 99:95){
+  
+ print(pop_song(i))
+  
+}
+```
+
+## Evolution 4: Apply functions
+
+```{r}
+
+sapply(99:95, pop_song)
+
+```
+
+## The apply functions
+
+- Pay attention to what type of input they *take* and what type of output they *give*
+- `sapply` takes a vector, returns a vector
+- `lapply` takes a list, returns a list
+- `apply` takes a dataset and a dimension (1 = row, 2 = col), returns a vector or list
+
+## Evolution 5: Tidyverse
+
+
+```{r}
+
+map_chr(99:95, pop_song)
+
+```
+
+## What if I want some options in my function?
+
+```{r}
+pop_song <- function(i, drink){
+  
+ paste(i, "bottles of", drink, "on the wall,", 
+       i, "bottles of ", drink, ".  Take one down, pass it around,",
+       i-1, "bottles of", drink, "on the wall.")
+  
+}
+```
+
+## Apply has trouble!
+
+```{r, error = TRUE}
+
+sapply(99:95, print(pop_song(drink = "beer")))
+
+```
+
+## You can kind of get around this...
+
+```{r}
+
+sapply(99:95, function(x) pop_song(x, drink = "beer"))
+
+```
+
+## But mapping has a shortcut!
+
+```{r}
+
+map_chr(99:95, ~pop_song(.x, "beer"))
+
+```
+
+- Note the "~" in front of the function - this is important!
+- Note the "." before the "x" - this is important!
+
+
+## What if I want to use many options?
+
+```{r, echo = FALSE}
+
+data <- data.frame(num = 99:95, drink = c("pop", "beer", "water", "lemonade","milk"))
+
+```
+
+```{r}
+head(data)
+```
+
+## Use map2!
+
+```{r}
+map2_chr(data$num, data$drink, ~pop_song(.x, .y))
+```
+
+# Vectorized functions
+
+## What does it mean to be vectorized?
+
+```{r}
+add_odds <- function(x,y){
+  
+  if(x %%2 == 1 & y %% 2 == 1){
+    
+    x + y
+    
+  } else {
+    
+   0
+    
+  }
+  
+}
+
+```
+
+## What does it mean to be vectorized?
+
+```{r}
+
+add_odds(1,3)
+
+add_odds(2,4)
+
+
+```
+
+## What does it mean to be vectorized?
+
+```{r, error = TRUE }
+
+first_nums <- c(1,2)
+next_nums <- c(3,4)
+
+add_odds(first_nums, next_nums)
+
+```
+
+## What does it mean to be vectorized?
+
+`add_odds` is not a vectorized function!
+
+```{r, eval = FALSE}
+add_odds <- function(x,y){
+  
+  if(x %%2 == 1 & y %% 2 == 1){
+    
+    x + y
+    
+  } else {
+    
+   0
+    
+  }
+  
+}
+
+```
+
+## What does it mean to be vectorized?
+
+ We can try to make it vectorized...
+ 
+```{r}
+add_odds_2 <- function(x,y){
+  
+  is_odd <- x %% 2 == 1 & y %% 2 == 1
+  
+  answers <- rep(0, length(x))
+  
+  answers <- x + y
+  
+  answers[!is_odd] <- 0
+  
+}
+
+```
+
+## What does it mean to be vectorized?
+
+```{r}
+
+first_nums <- c(1,2)
+next_nums <- c(3,4)
+
+add_odds_2(first_nums, next_nums)
+
+```
+
+## But, what if we can't vectorize?
+
+```{r}
+
+first_nums <- c(1,2)
+next_nums <- c(3,4)
+
+map2(first_nums, next_nums, ~add_odds(.x, .y))
+
+```
+
+# Absolute references
+
+## External objects
+
+- A function you write can rely on outside information.
+
+```{r}
+a <- 5
+
+add_to_a <- function(b){
+  a + b
+}
+
+add_to_a(3)
+```
+
+## External objects
+
+- But try to avoid this!  What if your information changes?
+
+```{r, error = TRUE}
+a <- NA
+
+add_to_a(3)
+```
+
+## External objects
+
+- But try to avoid this!  What if you don't have the object?
+
+```{r, error = TRUE}
+add_to_c <- function(c){
+  a + c
+}
+
+add_to_c(3)
+```
+
+
+
+
+# Things to remember
+
+
+## Things to remember
+
+- What does your function take as INPUT?
+- What does your function give as OUTPUT?
+- How can we write it to be friendly with `apply` or `map`?
+- Do you REALLY need to use `apply` or `map`, or is it vectorized?
+- Bonus: How can we write it to be friendly with `%>%`?
+
+
+
+
+
+

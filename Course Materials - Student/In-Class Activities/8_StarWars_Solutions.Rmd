@@ -1,0 +1,189 @@
+---
+title: "8_Activity_Testing"
+author: ""
+date: "February 6, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(broom)
+
+data("starwars")
+```
+
+# Instructions
+
+The dataset "starwars" has been loaded for you.  Take a look at it and understand the variables. 
+
+## Writing your own t-test
+
+Write a function called `run_t_test` that takes as input two vectors of numbers, and an option for the alternative hypothesis, and gives back the results of a t-test for equality of means.  You may not use the function `t.test()` except to check that your version is working correctly.
+
+```{r}
+run_t_test <- function(x, y, alternative = "two.sided"){
+  
+  x <- x[!is.na(x)]
+  y <- y[!is.na(y)]
+  
+  mx <- mean(x)
+  my <- mean(y)
+  
+  sdx <- sd(x)
+  sdy <- sd(y)
+  
+  nx <- length(x)
+  ny <- length(y)
+  
+  se <- sqrt(sdx^2/nx + sdy^2/ny)
+  
+  t_score <- (mx - my)/se
+  
+  dof <- min(nx, ny) - 1
+  
+  if (alternative == "two.sided"){
+    
+    pval <- 2*pt(-abs(t_score), df = dof)
+    
+  } else if (alternative == "less") {
+
+    pval <- pt(t_score, df = dof)
+    
+  } else if (alternative == "greater") {
+    
+    pval <- 1-pt(t_score, df = dof)
+    
+  }
+  
+  
+  
+  return(list(test.stat = t_score, df = dof, p.val = pval))
+}
+```
+
+Use your t-test function to answer the following:
+
+1. Are Humans or Droids taller?
+
+```{r}
+h_heights <- starwars %>%
+  filter(species == "Human") %>%
+  pull(height)
+
+d_heights <- starwars %>%
+  filter(species == "Droid") %>%
+  pull(height)
+
+
+run_t_test(h_heights, d_heights)
+
+```
+
+
+
+2. Do men or women weigh more?
+
+```{r}
+m_weights <- starwars %>%
+  filter(gender == "male") %>%
+  pull(mass)
+
+w_weights <- starwars %>%
+  filter(gender == "female") %>%
+  pull(mass)
+
+run_t_test(m_weights, w_weights)
+```
+
+
+## Chi-square tests
+
+Use the function `chisq.test()` to answer the following:
+
+1. Is there a relationship between hair color and eye color?
+
+```{r}
+starwars <- starwars %>% mutate(
+  Hair = case_when(
+    hair_color == "brown" | hair_color == "black" ~ "dark_hair",
+    hair_color == "none" ~ "bald",
+    TRUE ~ "light_hair"
+  ),
+  Eyes = case_when(
+    eye_color == "black" | eye_color == "dark" ~ "black",
+    eye_color == "brown" ~ "brown",
+    eye_color == "blue" ~ "blue",
+    TRUE ~ "other"
+  )
+)
+
+starwars %>% 
+  count(Hair, Eyes) %>%
+  spread(key = Hair, value = n) %>%
+  select(-Eyes) %>%
+  chisq.test() %>%
+  tidy()
+```
+
+
+
+2. Do Droids tend to come from some homeworlds more than others?
+
+```{r}
+has_droids <- starwars %>% 
+  filter(species == "Droid") %>%
+  count(homeworld) %>%
+  filter(n > 0) %>%
+  pull(homeworld)
+
+starwars %>% 
+  filter(homeworld %in% has_droids) %>%
+  filter(!is.na(species)) %>%
+  mutate(
+    species2 = species == "Droid"
+  ) %>%
+  count(species2, homeworld) %>%
+  spread(species2, n) %>%
+  select(-homeworld) %>%
+  chisq.test() %>%
+  tidy()
+
+```
+
+
+
+## Many tests (optional)
+
+On which worlds is the height difference between men and women most pronounced?
+
+```{r}
+#### I studied male vs. non-male, but I asked the question wrong on the activity.  My fault!  If you studied male vs. female, only Tattoine has enough observations to do a t-test.
+
+
+starwars <- starwars %>% 
+  mutate(
+    gender2 = case_when(
+      gender == "male" ~ "male",
+      TRUE ~ "non-male"
+    )
+  )
+  
+good_worlds <- starwars %>%
+  count(homeworld, gender2) %>%
+  spread(key= gender2, value = n) %>%
+  filter(`non-male` >= 3, male >=3) %>%
+  pull(homeworld)
+
+dat <- starwars %>% filter(homeworld %in% good_worlds) %>% group_by(homeworld) %>% nest()
+
+map_df(dat$data, ~tidy(t.test(height ~ gender2, data = .x)))
+```
+
+ 
+
+
+

@@ -1,0 +1,102 @@
+---
+title: "In-Class Activity:  Dates and Times"
+author: ""
+date: "January 14/15, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Setup
+
+We are now using a new package called `lubridate`.  To install it, copy the following into your console
+
+```
+install.packages("lubridate")
+```
+
+You only need to run this once, ever.
+
+Do NOT include this line in a code chunk - if you do, the package will be re-installed every single time you knit the file!
+
+Then run the following chunk to load up the packages.
+
+```{r}
+
+library(tidyverse)
+library(lubridate)
+```
+
+
+## Warm-up exercises
+
+Answer the following using code (even if you know the answer already).
+
+1. Save your birthday as a Datetime object in R.  
+2. What day of the week does/did your birthday fall on in 2019?
+3. On what day of the week should you plan your 100th birthday party?
+4. Find the date that is exactly 9 months before your birthday.  If it falls on a holiday, think about the implications.
+5. The following code loads a dataset giving the date ranges for the 12 Zodiac signs.  By making appropriate adjustments and calculations, find your Zodiac sign.
+
+```{r}
+zodiac <- read.csv("./Data/zodiac.csv")
+```
+
+
+## Solve the mystery
+
+Speaking of the Zodiac, one of the most famous mysteries in California history is the identity of the so-called "Zodiac Killer", who murdered 7 people in Northern California between 1968 and 1969.
+
+A new murder was committed last year in California, suspected to be the work of a new Zodiac Killer on the loose.  Fortunately, a camera was planted at the location where the body was found.  The FBI has provided you with a list of people who entered the building last year, and what date and time they entered, in Greenwich Mean Time (GMT).
+
+
+```{r}
+suspects <- read.csv("./Data/suspect_times.csv")
+```
+
+Unfortunately, the date and time of the murder is not known.  You have been hired to crack the case.  Use the clues below to discover the murderer's identity.
+
+```{r}
+ted <- suspects %>% filter(Name == " Ted Cruz") %>% mutate(
+  Time.Spotted = force_tz(ymd_hms(Time.Spotted), "America/Los_Angeles")
+)
+am(ted$Time.Spotted)
+wday(ted$Time.Spotted, label = TRUE)
+month(ted$Time.Spotted)
+```
+
+
+1. Based on the sunburn patterns on the body, the murder was not committed in the morning.
+
+```{r}
+suspects <- suspects %>% mutate(
+  Time.Spotted = force_tz(ymd_hms(Time.Spotted), "America/Los_Angeles")
+  ) %>% filter(!am(Time.Spotted)) 
+
+```
+
+
+2. The room where the murder was committed is closed Tuesdays and Thursdays, so the murder did not happen on those days.
+
+```{r}
+suspects <- suspects %>% filter(!wday(Time.Spotted, label = TRUE) %in% c("Tuesday", "Thursday")) 
+```
+
+
+3. It is believed that the murder was committed within 5 weeks (35 days) of Thanksgiving, 2018. 
+
+```{r}
+tgiving <- make_date(year = 2018, month = 11, day = 22)
+suspects <- suspects %>% filter(Time.Spotted >= tgiving + 35, Time.Spotted <= tgiving + 35) 
+```
+
+
+
+
+
+
+
+
+
+

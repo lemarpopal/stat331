@@ -1,0 +1,167 @@
+---
+title: "In-Class Activity:  12 Days of Christmas"
+author: ""
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+```
+
+## Setup
+
+The song "12 Days of Christmas", written around 1780, tells the tale of many gifts a person recieves in the days leading up to Christmas. [https://en.wikipedia.org/wiki/The_Twelve_Days_of_Christmas_(song)](https://en.wikipedia.org/wiki/The_Twelve_Days_of_Christmas_(song)) These gifts repeat; on the first day, the narrator recieves
+
+```
+A partridge in a pear tree.
+```
+
+On the last day, he or she recieves
+
+```
+Twelve Drummers Drumming
+Eleven Pipers Piping
+Ten Lords a Leaping
+Nine Ladies Waiting
+Eight Maids a Milking
+Seven Swans a Swimming
+Six Geese a Laying
+Five Golden Rings
+Four Calling Birds
+Three French Hens
+Two Turtle Doves
+And a Partridge in a Pear Tree
+```
+
+Run the code below to load up a dataset called `xmas` that contains the crucial information about these gifts.  Your task will be to make R sing the whole song to you, using only this dataset.
+
+```{r}
+
+library(tidyverse)
+
+xmas <- read.csv("https://www.dropbox.com/s/e584pryn8evm1gz/xmas.csv?dl=1")
+```
+
+
+## Step One:  Plurals
+
+Note that the gifts are listed in singular: for example, on day 5 the narrator recieves "5 golden rings", but the entry for the gift on day 5 simply says "ring".  Write a function called "pluralize_gifts" that takes a gift and returns the appropriate plural. Some code structure is provided for you below.
+
+*Hint: Note that the gifts on days 6 and 9 have unusual pluralizations.*
+*Hint:  The functions `paste()` and `paste0()` should be useful, as well as the stringr functions from last week.*
+
+Important:  You should **absolutely not** hard-code anything into this function.  For example, the word "rings" should not appear in the function.  I should be able to give it any list of gifts and any list of days, and get back the plurals.
+
+```{r}
+
+pluralize_gifts <- function(gift, day){
+  
+  skip <- ## which gifts do we not simply put an "s" at the end of?
+  
+  gifts <- gifts %>%  ## make the special adjustments
+        
+  gifts[!skip] <- ## put and s at the end of the rest
+  
+  return(gifts)
+  
+} 
+
+```
+
+
+
+Now, use `mutate` with your new function to add a variable called `Plural.Gifts` to the `xmas` dataset.
+
+
+## Step Two: Creating sentences
+
+
+Write a function called `make_phrase` that takes as input the necessary information, and returns a phrase.  For example, 
+
+`make_phrase(num = 10, item = "lords", verb = "a-leaping", adjective = "", location = "")`
+
+should return
+
+```
+"10 lords a-leaping"
+```
+
+**Hint: the function `str_replace_na` may be useful.**
+
+```{r}
+make_phrase <- function(num, item, verb, adjective, location){
+  
+ 
+  
+  return(phrase)
+}
+
+
+```
+
+Use this function to make a new variable called `phrases` that contains all the gifts.
+
+
+## Step Three:  A for-loop
+
+Use a for loop to sing the song.  At each step, your loop should:
+- Print out an introductory phrase, such as  "On the first day of Christmas, my true love sent to me"
+- Print out all the necessary gift phrases, with correct punctuation between them.
+
+*Hint: Use `print()` make R show the sentences/phrases.*
+*Hint: You  may want a secondary loop!*
+
+```{r}
+
+for (i in 1:12){
+  
+  
+  print(paste("On the ", xmas$Day.in.Words[i], "day of Christmas, my true love sent to me"))
+  
+  
+}
+
+
+```
+
+## Step Four:  Using apply and map.
+
+Write a function called `sing_line` that takes as input a number corresponding to a row of the dataset `xmas` and returns the entire section of the song for that day of Christmas.  For example, 
+
+`sing_line(xmas, 2)`
+
+should return
+
+```
+On the second day of Christmas, my true love sent to me,
+two turtle doves and a partridge in a pear tree.
+```
+
+*Hint: This should be a quick copy-paste, since your function will basically perform all the tasks inside your for loop!*
+
+Then have R sing me the Twelve Days of Christmas song using (a) an apply function and (b) a map function.
+
+
+## Step Five:  One function to rule them all.
+
+Combine steps 1-4 into one function called `sing_song`.  That is, this function should take as input:
+- the vector of days
+- the vector of (unpluralized) gifts
+- etc
+
+*Note: You are encouraged to make smaller functions - such as the ones you used earlier to pluralize gifts or write phrases - and reference these inside your primary function.*
+
+Test your function on the following code, which should return the whole "12 Days of Christmas" song:
+
+```{r}
+xmas <- read.csv("https://www.dropbox.com/s/e584pryn8evm1gz/xmas.csv?dl=1")
+
+sing_song(xmas)
+```
+
+When you have finished, open the file "7_FP_Assignment", and copy your function into the code chunk, follow the directions, and knit.  Turn this in to PolyLearn.
+
+
+
+

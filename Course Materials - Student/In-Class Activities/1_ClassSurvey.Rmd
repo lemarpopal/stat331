@@ -1,0 +1,189 @@
+---
+title: "Class Survey Analysis"
+author: "Kelly Bodwin"
+date: ""
+output: html_document
+---
+
+## 0.  Loading packages
+
+**R** relies heavily on "packages" that allow users to add extra abilities to the basic functionality.  For now, I will always load the required packages for you.
+
+```{r setup}
+
+# load packages
+source("../Scripts/packageLoaders.R")
+
+```
+
+## 1. Loading and summarizing data
+
+Our first step in any data anlysis is, of course, to get the dataset!  The code below will pull the current set of responses to the in-class survey.  It will then show you some information about this data.  See if you can figure out what you are being shown.
+
+```{r read_data}
+
+# Read data from current version of google spreadsheet responses
+survey_orig <- gsheet2tbl("https://docs.google.com/spreadsheets/d/1CehXk2VLh9KxCdPjbDT1Aq35ZEnPxjUNnPKVLkiaxZ8/edit?usp=sharing")
+
+# Check to make sure data is read correctly
+head(survey_orig)
+summary(survey_orig)
+
+# Look at number of rows in dataset
+nrow(survey_orig)
+
+```
+
+
+## 2. Data Cleaning and Variable Editing
+
+Often, datasets will need to be edited before we can nicely explore the information we are interested in.  The code below takes the original dataset that you looked at above, and creates two new ones in its place.  See if you can find the differences.
+
+```{r}
+
+# Rename variables
+names(survey_orig) <- c("Timestamp", "Year", "Major", "Minor", "Stat.Classes", "CS.Classes", "R.Experience", "Git.Experience", "Political", "Hot.Dog", "Kardashian", "Cal.Poly.Word", "Excited", "Nervous")
+
+# Keep essay responses in separate dataset, for convenience
+free_response <- survey_orig %>% select(Cal.Poly.Word, Excited, Nervous)
+
+
+# Drop free response and fix up factor variables
+survey <- survey_orig %>% 
+  mutate(
+    R.Class = grepl("class", R.Experience),
+    R.Job = grepl("job", R.Experience),
+    R.Research = grepl("research", R.Experience),
+    Minor = gsub(" minor", "", Minor)
+  ) %>% 
+  select(-Cal.Poly.Word, -Excited, -Nervous, -R.Experience) %>%
+  mutate_if(is.character, factor)
+ 
+
+# Check that this worked
+head(free_response)
+head(survey)
+  
+  
+```
+
+
+## 3.  Basic Plotting
+
+A good first step in any data exploration is to visualize the data and see what is going on.  The code below will show some of the information from our class survey.
+
+```{r}
+
+# Histograms to summarize numeric variables
+
+survey %>% mutate(
+  CS.Classes = as.numeric(CS.Classes)
+) %>%
+  ggplot(aes(x = CS.Classes)) + geom_histogram()
+
+# Boxplots to compare a numeric variable and categorical variable
+
+survey %>%
+  ggplot(aes(y = Stat.Classes, x = Major, fill = Major)) + geom_boxplot()
+
+
+# Barplots to compare two or more categorical variables
+
+survey %>% 
+  ggplot(aes(x = Major, fill = Minor)) + geom_bar() +
+  ggtitle("Minors by Major")
+
+survey %>% 
+  ggplot(aes(x = Year, fill = Kardashian)) + geom_bar(position = "fill") +
+  ggtitle("Kardashian preference (as percent) by School Year")
+
+
+survey %>% mutate(
+  Political_2 = case_when(
+    Political == "Democrat" ~ "Democrat",
+    Political == "Republican" ~ "Republican",
+    TRUE ~ "Other"
+  ),
+  Major_2 = case_when(
+    Major == "Statistics" ~ "Statistics",
+    Major == "Computer Science" ~ "Computer Science",
+    TRUE ~ "Other"
+  )
+) %>%
+  ggplot(aes(x = Major_2, fill = Hot.Dog)) + facet_wrap(~Political_2) + geom_bar(position = "fill") +ggtitle("Hot dog opinions by political party and major")
+
+
+
+```
+
+
+## 4. Reshaping data
+
+Often, datasets contain all the information we need, but not in a format that is easy to analyze.  A subtle skill, which we will study later, is "reshaping" datasets to more easily answer questions.  
+
+Use your console to look at `survey_courses_1` and `survey_courses_2`.  (It is okay if you need to ask for help with this step.)
+
+```{r}
+
+# Create "wide" dataset with coursework
+
+survey_courses_1 <- survey %>% 
+  select(Major, Minor, Year, Stat.Classes, CS.Classes) 
+
+survey_courses_2 <- survey %>%
+  gather(Stat.Classes, CS.Classes, key = Subject, value = Num.Classes) %>%
+  mutate(
+    Subject = gsub(".Classes", "", Subject)
+  )
+
+# Compare coursework by major
+
+survey_courses_2 %>%
+  ggplot(aes(x = Major, y = Num.Classes, fill = Subject)) + geom_boxplot() +
+  ggtitle("Classes by Major")
+
+
+```
+
+## 5. Words and strings
+
+In the second half of this course, we will learn to leverage our skills in modern and exciting contexts, especially those with nontraditional data.  Check out the output below to see what your classmates have to say about Cal Poly and this course!
+
+```{r}
+cal_poly_sentiment <- survey_orig %>% 
+  select(Cal.Poly.Word, Year) %>%
+  mutate_at(vars(Cal.Poly.Word), funs(str_to_lower)) %>%
+  left_join(get_sentiments("bing"), by = c("Cal.Poly.Word" = "word"))
+
+
+
+cal_poly_sentiment %>% 
+  count(Year, sentiment) %>%
+  ggplot(aes(x = Year, y = n, fill = sentiment)) + geom_col(position = "fill") +
+  ggtitle("Sentiment about Cal Poly by Year")
+
+
+nervous_words <- free_response %>%
+  unnest_tokens(word, Nervous) %>%
+  count(word) %>%
+  anti_join(get_stopwords())
+  
+  
+
+with(nervous_words,
+  wordcloud(words = word, freq = n, min.freq = 1, rot.per = 0.35)
+)
+
+excited_words <- free_response %>%
+  unnest_tokens(word, Excited) %>%
+  count(word) %>%
+  anti_join(get_stopwords())
+  
+  
+
+with(excited_words,
+  wordcloud(words = word, freq = n, min.freq = 1, rot.per = 0.3)
+)
+
+
+```

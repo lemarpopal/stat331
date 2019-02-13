@@ -1,0 +1,75 @@
+---
+title: "Week Two Skills"
+output: pdf_document
+---
+
+
+### Tidyverse and Base R:
+\begin{itemize}
+  \item I know the difference between Tidyverse and Base R.
+  \item I have an idea of the advantages and disadvantages of each.
+\end{itemize}
+
+### Loops:
+
+`for()`, `while()`, `in`, `apply()`
+
+\begin{itemize}
+  \item I can write a "for" loop using indices.
+  \item I can write a "for" loop from an existing vector or data frame.
+  \item I can write a "while" loop.
+  \item I can use `apply()` instead of a loop.
+\end{itemize}
+
+### Conditionals: 
+
+`if()`, `else if()`, `else()`
+
+\begin{itemize}
+  \item I can write useful "if" statements.
+\end{itemize}
+
+
+### Functions: 
+
+`function()`, `return()`, `source()`
+
+\begin{itemize}
+  \item I can write my own simple functions. 
+  \item I know what a script is.
+  \item I can call scripts from sources to load functions. 
+\end{itemize}
+
+### Dataset Exploration: 
+
+`filter()`, `arrange()`, `select()`
+
+\begin{itemize}
+  \item I can investigate an unknown data frame.
+  \item I can subset a data frame by column.
+  \item I can subset a data frame by row conditions.
+  \item I can sort a data frame.
+\end{itemize}
+
+### Creating variables:
+
+`mutate()`, `summarize()`, `group_by()`, `mutate_at()`, `summarize_at()`
+
+\begin{itemize}
+  \item I can create new variables as needed in a dataset.
+  \item I can find variable attributes, like mean and median, by group.
+\end{itemize}
+
+### Plotting:
+
+`ggplot()`, `aes()`, `geom_bar()`, `geom_boxplot()`, `geom_histogram()`, `geom_point()`
+
+`ggitle()`, `xlab()`, `ylab()`, `scale_x_continuous()`, `scale_y_continuous()`, `facet()`
+
+\begin{itemize}
+  \item I can make a plot appropriate to my research question
+  \item I can adjust the colors and labels as needed.
+  \item I can make multiple plots across different values of a categorical variable.
+\end{itemize}
+
+

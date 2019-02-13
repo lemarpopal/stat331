@@ -1,0 +1,282 @@
+---
+title: "Week One Skills"
+output: pdf_document
+---
+
+
+### General principles:
+\begin{itemize}
+  \item There is more than one way to do almost anything!
+  \item Google is your friend.
+  \item Infinitely many resources and tutorials.
+  \item Think first, code second.
+  \item Check yourself before you wreck yourself: test your code.
+  \item Reproducibility: What happens if the source data changes?
+\end{itemize}
+
+### RStudio:
+
+\begin{itemize}
+  \item I know how to view datasets.
+  \item I know where my environment is.
+  \item I know how to execute code in the console.
+  \item I know how to use the files, plots, packages, and help panes.
+  \item I know how to get helpful information about functions and packages.
+\end{itemize}
+
+### Arithmetic: 
+
+`+`, `-`, `\`, `*`, `^`, `%%`, `sqrt()`
+
+\begin{itemize}
+  \item I can use R as a calculator
+\end{itemize}
+
+
+### Variable assignment: 
+
+`<-`, `class()`
+
+`mutate()`, `rename()` [tidyverse]
+
+\begin{itemize}
+  \item I can create a new variable to store information. 
+  \item I can give the variable a reasonable name.
+  \item I can check know the variable type. 
+\end{itemize}
+
+### Vectors: 
+
+`c()`, `rep()`, `seq()`, `:`
+
+\begin{itemize}
+  \item I can creating a list of numbers as efficiently as possible.  
+  \item I can do operations on every vector element at once.
+  \item I can combine two vectors.
+  \item I can subset vectors with `[]`
+\end{itemize}
+
+### Logical:
+
+`<`, `>`, `==`, `<=`, `>=`, `!`
+
+\begin{itemize}
+  \item I know what a "boolean" is.
+  \item I can subset a vector using logic statements.
+\end{itemize}
+
+Matrices:
+
+`matrix()`, `rowSums()`, `colSums()`, `rbind()`, `cbind()`, `[]`
+
+\begin{itemize}
+  \item I can create a matrix.
+  \item I can find row and column totals of a matrix.
+  \item I can combine two matrices.
+  \item I can select rows, columns, and elements of a matrix.
+\end{itemize}
+
+
+Categorical Variables:
+
+`factor()`, `levels()`, `summary()`
+
+`case_when()`  [tidyverse]
+
+\begin{itemize}
+  \item I can create a factor from a character vector.
+  \item I can find and change the possible categories.
+  \item I can summarize the variable.
+\end{itemize}
+
+### Data Frames:
+
+`data.frame()`, `head()`, `tail()`, `summary()`, `str()`, `[]`, `order()`, `sort()`, `subset()`
+
+`tbl_df()`, `arrange()` [tidyverse]
+
+\begin{itemize}
+  \item I know the difference between a matrix and a data frame.
+  \item I can create a data frame.
+  \item I can investigate an unknown data frame.
+  \item I can subset a dataframe.
+  \item I can sort a data frame.
+\end{itemize}
+
+### Lists:
+
+`list()`
+
+\begin{itemize}
+  \item I know the difference between a matrix, a data frame, and a list.
+  \item I can create a list.
+  \item I know how to use `[]` and `[[]]`
+\end{itemize}
+
+
+
+### Tidyverse and Base R:
+\begin{itemize}
+  \item I know the difference between Tidyverse and Base R.
+  \item I have an idea of the advantages and disadvantages of each.
+\end{itemize}
+
+### Loops:
+
+`for()`, `while()`, `in`, `apply()`
+
+\begin{itemize}
+  \item I can write a "for" loop using indices.
+  \item I can write a "for" loop from an existing vector or data frame.
+  \item I can write a "while" loop.
+  \item I can use `apply()` instead of a loop.
+\end{itemize}
+
+### Conditionals: 
+
+`if()`, `else if()`, `else()`
+
+\begin{itemize}
+  \item I can write useful "if" statements.
+\end{itemize}
+
+
+### Functions: 
+
+`function()`, `return()`, `source()`
+
+\begin{itemize}
+  \item I can write my own simple functions. 
+  \item I know what a script is.
+  \item I can call scripts from sources to load functions. 
+\end{itemize}
+
+### Dataset Exploration: 
+
+`filter()`, `arrange()`, `select()`, `top_n()`, `desc()`
+
+\begin{itemize}
+  \item I can investigate an unknown data frame.
+  \item I can subset a data frame by column.
+  \item I can subset a data frame by row conditions.
+  \item I can sort a data frame.
+\end{itemize}
+
+### Creating variables:
+
+`mutate()`, `summarize()`, `group_by()`, 
+
+`mutate_at()`, `summarize_at()`, 
+
+`mutate_if()`, `summarize_if()`,
+
+`mutate_all()`, `summarize_all()`
+
+\begin{itemize}
+  \item I can create new variables as needed in a dataset.
+  \item I can find variable attributes, like mean and median, by group(s).
+\end{itemize}
+
+### Plotting:
+
+`ggplot()`, `aes()`, `geom_bar()`, `geom_boxplot()`, `geom_histogram()`, `geom_point()`
+
+`ggitle()`, `xlab()`, `ylab()`, `scale_x_continuous()`, `scale_y_continuous()`, `facet()`
+
+\begin{itemize}
+  \item I can make a plot appropriate to my research question
+  \item I can adjust the colors and labels as needed.
+  \item I can make multiple plots across different values of a categorical variable.
+\end{itemize}
+
+
+### Dataset restructuring
+
+`gather()`, `spread()`, `separate()`, `pull()`
+
+\begin{itemize}
+  \item I can split a variable into two separate ones.
+  \item I can convert variable values to a column of categories with corresponding values.
+  \item I can convert a categorical variable to column names.
+  \item I can find the largest and smallest values in a dataset.
+\end{itemize}
+
+### Dates and times
+
+`parse_date_time()`, `mdy()`, `hms()`, ...
+
+`day()`, `month()`, `year()`, ...
+
+`force_tz()`, `with_tz()`, ...
+
+`wday()`, `mday()`, ...
+
+\begin{itemize}
+  \item I can create a Datetime object, and I understand how this is different than a character value.
+  \item I can manipulate Datetime objects to find pieces of information or display differently.
+  \item I can edit Datetime objects.
+  \item I understand the integer representation of a Datetime.
+\end{itemize}
+
+
+### Strings
+`str_extract`, `str_detect`, `str_replace`, etc.
+
+`str_extract_all`, `str_detect_all`, `str_replace_all`, etc.
+
+`str_trim`, `str_trunc`
+
+`paste`, `str_c`, `print`
+
+\begin{itemize}
+  \item I understand what a string (character) object type is.
+  \item I can use various functions to search and edit vectors of strings.
+  \item I can use regular expressions to match desired parts of strings.
+  \item I can manipulate, combine, and pring strings.
+\end{itemize}
+
+### Writing Functions
+` <- function()`, `return`
+
+\begin{itemize}
+  \item I can write simple functions.
+  \item I can write "helper functions" to use inside a main function.
+  \item I understand how to choose inputs and outputs for a function.
+\end{itemize}
+
+### Functional Programming
+`map`, `map_chr`, `map_dbl`, etc.
+
+`map2`, `map2_chr`, `map2_dbl`, etc.
+
+` ~function(.x)` notation
+
+`apply`, `sapply`, `lapply`, etc.
+
+\begin{itemize}
+  \item I can use functions in for loops.
+  \item I can use `map` or `apply` to apply a function for many values of input.
+  \item I can use special `map` notation or "headless functions" to apply a function for many values, with multiple inputs.
+  \item I can use `map2` to apply a function for many values of each input.
+  \item I know what kind of output to expect when I use `map` or `apply` type functions.
+  \item I can write simple functions to be used with `map` or `apply` type functions.
+  \item (Optional) I can use list-columns with `map`.
+\end{itemize}
+
+
+### Probability Distributions and Tests
+`sample`, `sample_n`
+
+`pnorm`, `qnorm`, `dnorm`, `rnorm`,
+
+`p`, `q`, `d`, `r` types for other distributions
+
+`t.test`, `chisq.test`
+
+\begin{itemize}
+  \item I can take samples from a dataset.
+  \item I can take samples from a distribution.
+  \item I can answer probability questions with `p`, `q`, and `d` functions.
+  \item I can perform t-tests and Chi-square tests in R.
+\end{itemize}
+

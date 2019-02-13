@@ -1,0 +1,77 @@
+---
+title: "Lab Assignment 4: Pokemon Challenge"
+output: pdf_document
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=6, fig.height=4, fig.path='Figs/',
+                      echo=TRUE, warning=FALSE, message=FALSE,eval=TRUE)
+```
+
+# Instructions
+
+Pokémon are creatures in a series of video games, who battle each other for victory.  The following will load a dataset of 721 Pokémon, and their various qualities:
+
+```{r}
+library(tidyverse)
+
+pokes <- read.csv("https://www.dropbox.com/s/i0lwxgv86eaoq4o/pokemon.csv?dl=1")
+```
+
+
+The variables in this dataset are as follows:
+
+* `Number`: The "Pokédex" number of the Pokémon. (Essentially meaningless.)
+* `Name`:  The name of the Pokémon
+* `Type_1`:  The Pokémon's primary type
+* `Type_2`:  The Pokémon's secondary type (some do not have this)
+* `Total`: The total of all fight qualities, which include:
+    + `HP`: "Hit Points", or how good a Pokémon is at staying alive.
+    + `Attack`:  How strong the Pokémon's attack moves are.
+    + `Defense`:  How good the Pokémon is at blocking attacks.
+    + `Sp_Atk`: The strength of the Pokémon's special attack move.
+    + `Sp_Def`: The strength of the Pokémon's special block move.
+    + `Speed`: How fast the Pokémon is.
+* `Height_m`: The height of the Pokémon.
+* `Weight_kg`: The weight of the Pokémon.
+* `Catch_Rate`: How easy the Pokémon is to catch.
+
+Your task is, quite simply, to find some interesting insight into what makes a Pokémon a good fighter.  You will need to turn in an html report of 2 pages or less, nicely formatted and generated from R Markdown.  Your report should include:
+
+1. At least one plot, with proper labels.
+
+2. At least one statistical analysis or model.
+
+3. Proper discussion and interpretation of all work.
+
+You may work with **one or two** other people, i.e., groups of up to 3.  If you do, you should **each** turn in an html file on PolyLearn; however, these should be identical and should have all group members' names at the top.
+
+Extra credit will be given to the person/group with the best writeup, measured both by presentation style and by intriguing insight, as judged by Dr. Bodwin and Dr. Glanz.
+
+\pagebreak
+
+# Example
+
+For example, a very simple analysis might include:
+
+```{r}
+best_pokes <- pokes %>% 
+  group_by(Type_1) %>%
+  summarize(avg_Total = mean(Total)) 
+
+best_pokes %>%
+  top_n(3, avg_Total)
+
+best_pokes %>% 
+  top_n(10, avg_Total) %>% 
+  mutate(
+    Type = fct_reorder(Type_1, avg_Total)
+  ) %>%
+  ggplot(aes(x = Type, y = avg_Total, fill = Type)) + geom_col()
+```
+
+Conclusion:  Dragon type Pokémon have the best fighting stats on average.
+
+You would, of course, need more discussion than this!  And your insight will hopefully be more interesting and nuanced than mine.
+
+
