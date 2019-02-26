@@ -1,0 +1,108 @@
+---
+title: "Lab5_Baby_Names"
+author: "Lemar Popal"
+date: "February 24, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+library(tidyverse)
+library(broom)
+library(readxl)
+```
+
+For this lab assignment, I wanted to investigate the popularity of the name "Matthew", because that is the name of my good friend and roommate.
+
+```{r echo=FALSE}
+my_path <- "/Users/lemarpopal/Desktop/STAT-331/Directories_etc/Babyname_Datasets/"
+
+babies <- read_xlsx(paste0(my_path, "babies_ca.xlsx"))
+
+matthews <- babies %>% filter(Name == "Matthew")
+```
+
+First, let's take a look at how the name "Matthew" has changed over time.
+
+```{r echo=FALSE}
+ggplot(matthews, aes(x = Year, y = Count, color=Gender)) + geom_line() + 
+  ggtitle("Popularity of 'Matthew' Over Time")
+```
+
+It looks like the popularity of the name Matthew peaked in 1990 and has mostly decreased since then. My roommate was born in 1999, so it looks like he was born as the name was becoming less popular. However, we see below that, in 1999, Matthew was still the 8th most popular name in California. 
+
+```{r echo=FALSE, message=FALSE, comment=""}
+babies %>% 
+  filter(Year == 1999) %>%  
+  group_by(Name) %>% 
+  summarise(number_born_in_1999 = sum(Count)) %>% 
+  arrange(desc(number_born_in_1999)) %>% 
+  top_n(8) 
+```
+
+As we saw in the line graph above, it looks like the popularity of "Matthew" has decreased roughly linearly since it peaked. Let's filter for male Matthew's born in or after 1990, and then create a linear model with the year as the explanatory variable, and the number of Matthew's as the response.
+
+```{r echo=FALSE}
+matthews_90 <- babies %>%
+  filter(Name == "Matthew") %>%
+  filter(Gender == "M") %>%
+  filter(Year >= 1990)
+
+linear_model <- lm(Count ~ Year, matthews_90)
+
+tidy(summary(linear_model)) %>% select(term, estimate) %>% filter(term == "Year")
+
+
+# polynomial fit
+# matthews_90 <- babies %>%
+#   filter(Name == "Matthew") %>%
+#   filter(Gender == "M") %>%
+#   filter(Year >= 1990)
+# 
+# #poly_model <- lm(Count ~ Year, matthews_90)
+# poly_model <- lm(Count ~ poly(Year, 2, raw=TRUE), matthews_90)
+# 
+# tidy(summary(poly_model)) 
+
+
+```
+We see that, from the slope estimate, there is a fairly steep downward trend in the number of male children being named "Mattew" per year. We can plot this trend below. 
+
+
+```{r, echo=FALSE}
+ggplot(matthews_90, aes(x = Year, y = Count)) +
+  geom_point() +
+  stat_smooth(method = "lm") +
+  ggtitle("Count of Males named Matthew after 1990")
+
+# polynomial fit plot
+# ggplot(matthews_90, aes(x = Year, y = Count)) +
+#   geom_point() + 
+#   stat_smooth(method = "lm", formula=y ~ poly(x, 2, raw=TRUE)) + 
+#   ggtitle("Count of Males named Matthew after 1990")
+
+```
+
+The linear model above fits the decreasing trend fairly well. Now let's look at the residuals to see if a linear model is really the best fit. 
+
+```{r echo=FALSE, message=FALSE}
+library(modelr)
+
+#d$residuals <- residuals(linear_model)
+
+matthews_90 %>% 
+  mutate(residual = residuals(linear_model)) %>% 
+  ggplot(aes(x = Year, y = residual)) + geom_point()
+```
+
+There is not too strong of a pattern, so we can say that a linear model is an okay fit. Although, it looks like we are overestimating a bit because most of our residuals are negative, so there might be a better regression to fit this trend (like a polynomial). 
+
+We conclude that the popularity of the name "Matthew" increased dramatically starting in the 1950's, peaked in popularity in 1990, and has decreased in popularity since them (roughly linearly). Every year there is a smaller probability of a baby having the same name as him. 
+
+
+
+
+
