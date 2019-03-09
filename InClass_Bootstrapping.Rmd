@@ -1,0 +1,287 @@
+---
+title: "Bootstrapping"
+author: Kelly Bodwin
+date: 
+output: 
+  ioslides_presentation:
+    fontsize: 10pt
+    incremental: true
+  # beamer_presentation:
+  #   theme: "boxes"
+  #   colortheme: "beaver"
+  #   fonttheme: "structurebold"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+titanic <- read.csv("https://raw.githubusercontent.com/kbodwin/ShinyLabs/master/Datasets/titanic.csv")
+library(tidyverse)
+library(lubridate)
+library(modelr)
+library(broom)
+
+data(mtcars)
+```
+
+
+```{r}
+automatic_cars <- mtcars %>% 
+  filter(am == 1)
+
+manual_cars <- mtcars %>% 
+  filter(am == 0)
+
+manual_cars$hp
+```
+
+```{r}
+set.seed(35)
+my_automatic_boots <- replicate(1000, sample(automatic_cars$hp, replace=TRUE), simplify = FALSE)
+my_automatic_boot_means <- map_dbl(my_automatic_boots, mean)
+
+my_manual_boots <- replicate(1000, sample(manual_cars$hp, replace=TRUE), simplify = FALSE)
+my_manual_boot_means <- map_dbl(my_manual_boots, mean)
+
+diff_means <- my_automatic_boot_means - my_manual_boot_means
+
+quantile(diff_means, c(0.025, .975))
+```
+
+
+```{r}
+
+boot_CIs <- data.frame()
+
+diff_means <- mean(automatic_cars$hp) - mean(manual_cars$hp)
+
+boot_it(automatic_cars$hp)
+
+boot_it(manual_cars$hp)
+```
+
+```{r}
+my_sample <- rbinom(10, 1, .8)
+
+boot_it(my_sample)
+```
+
+
+
+
+
+# Estimation and Confidence
+
+
+## Estimating the mean
+
+Suppose we want to find the mean of a population, but we only have one sample, of size 100.  Our best guess is
+
+```{r}
+my_sample <- rnorm(100)
+mean(my_sample)
+```
+
+Not bad!  (The true mean is 0.)  But how confident are we?
+
+## Confidence
+
+```{r}
+my_test <- tidy(t.test(my_sample))
+my_test
+```
+
+## Confidence
+
+We are 95% confident that the true mean is between `r my_test$conf.low` and `r my_test$conf.high`.
+
+
+BUT!  What assumptions did this depend on?
+
+## Normality
+
+```{r}
+ggplot(, aes(x = my_sample)) + 
+  geom_histogram(aes(y = ..density..), bins = 10, fill = "cornflowerblue")+
+  stat_function(fun = dnorm, color = "darkred", size = 2) 
+```
+
+
+## Estimating the mean with skew
+
+```{r}
+skewed_sample <- rexp(1000)
+```
+
+```{r, echo = FALSE, warning = FALSE}
+ggplot(, aes(x = skewed_sample)) + 
+  geom_histogram(aes(y = ..density..), bins = 10, fill = "cornflowerblue")+
+  stat_function(fun = dnorm, args = list(mean = mean(skewed_sample), sd = sd(skewed_sample)), color = "darkred", size = 2) +
+  xlim(c(-5, 5))
+```
+
+## Confidence
+
+```{r}
+my_test_2 <- tidy(t.test(skewed_sample))
+my_test_2
+```
+
+## Ask yourself...
+
+* Do you trust the t-confidence interval?
+* Is the mean the best measure of center?
+* How would you make a confidence interval for the median?
+
+# Pull yourself up by your bootstraps!
+
+## Idea:
+
+* A large enough representative sample from a population is a good approximation for the distribution of the population.
+* We could do better inference we had more samples.
+
+Thus:  Re-sample from our sample!
+
+## Bootstrap it:
+
+```{r}
+sample(skewed_sample, replace = TRUE)
+# why is replace = TRUE important?
+```
+
+## Bootstrap it:
+
+```{r}
+my_boots <- replicate(1000, sample(skewed_sample, replace = TRUE), simplify = FALSE)
+```
+
+```{r, echo = FALSE, warning = FALSE}
+ggplot(, aes(x = unlist(my_boots))) + 
+  geom_histogram(aes(y = ..density..), bins = 10, fill = "cornflowerblue")+
+  stat_function(fun = dnorm, args = list(mean = mean(skewed_sample), sd = sd(skewed_sample)), color = "darkred", size = 2) +
+  xlim(c(-5, 5)) 
+```
+
+## Bootstrapped confidence
+
+```{r}
+my_stats <- data.frame(
+  means = map_dbl(my_boots, mean),
+  medians = map_dbl(my_boots, median)
+)
+head(my_stats)
+```
+
+## Plot it
+
+```{r}
+my_stats %>% 
+  gather("Stat", "Value") %>%
+ggplot(aes(x = Value, fill = Stat)) +
+  geom_histogram(bins = 20)
+```
+
+## Confidence intervals
+
+What range catches 95% of our bootstrap estimates?
+
+```{r}
+my_test_2 %>% select(conf.low, conf.high)
+quantile(my_stats$means, c(0.025, 0.975))
+quantile(my_stats$medians, c(0.025, 0.975))
+```
+
+## Ask yourself...
+
+* Do you trust the t-confidence interval?
+* Is the mean the best measure of center?
+* How would you make a confidence interval for the median?
+
+# Very small samples
+
+## Bootstrap vs. t-test
+
+```{r}
+small_sample <- rbinom(10, 1, 0.8)
+tidy(t.test(small_sample)) %>% select(conf.low, conf.high)
+```
+
+## Bootstrap vs. t-test
+
+```{r}
+my_boots <- replicate(1000, sample(small_sample, replace = TRUE), simplify = FALSE)
+boot_means <- map_dbl(my_boots, mean)
+quantile(boot_means, c(0.025, .975))
+```
+
+## Bootstrap vs. t
+
+```{r, echo = FALSE}
+boot_it <- function(sample){
+  
+  my_boots <- replicate(1000, sample(sample, replace = TRUE), simplify = FALSE)
+  boot_means <- map_dbl(my_boots, mean)
+  return(quantile(boot_means, c(0.025, .975)))
+  
+}
+```
+
+```{r}
+boot_CIs <- data.frame()
+t_CIs <- data.frame()
+means <- c()
+set.seed(35)
+for(i in 1:10){
+  
+  my_sample <- rbinom(10, 1, .8)
+  
+  means <- c(means, mean(my_sample))
+  
+  boot_CIs <- rbind(boot_CIs, boot_it(my_sample))
+  
+  my_test <- tidy(t.test(my_sample)) %>% select(conf.low, conf.high)
+  
+  t_CIs <- rbind(t_CIs, my_test)
+  
+}
+```
+
+What is happening in this code?
+
+```{r, echo = FALSE}
+names(boot_CIs) <- c("lower", "upper")
+names(t_CIs) <- c("lower", "upper")
+final_results <- full_join(boot_CIs, t_CIs) %>%
+  mutate(
+    try = rep(1:10, 2),
+    type = c(rep("Bootstrap", 10), rep("t", 10)),
+    means = rep(means, 2)
+  )
+  
+```
+
+
+
+## Bootstrap vs. t
+
+```{r, echo = FALSE}
+final_results %>% arrange(try) %>%
+ggplot(aes(x = means, fill = type)) + 
+    geom_errorbarh(aes(xmin=lower, xmax=upper, y = 1:20, color = type), size = 2) +
+  geom_point(aes(x = means, y = 1:20))
+```
+
+
+# Activity
+
+## Automatic versus manual cars
+
+Load the `mtcars` dataset into R by typing `data(mtcars)`.
+
+This dataset contains information about 32 different cars.
+
+Use bootstrapping to make a 95\% confidence interval for the difference in horsepower (`hp`) between automatic (`am = 0`) and manual (`am = 1`) cars.
+
+Write a sentence summarizing your findings in the PolyLearn assignment.

@@ -1,0 +1,41 @@
+---
+title: "6_InClass_Minimal_Reproducible_Example"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(reprex)
+```
+
+
+The following code has an issue that are preventing it from successfully creating a “height in inches” variable in the NBA dataset.
+
+```{r}
+#nba <- read.csv("/Users/kbodwin/Dropbox/Teaching/331/Data/NBA_player_of_the_week.csv")
+
+library(tidyverse)
+
+nba <- data.frame(
+  Height = c("5-9", "170cm")
+)
+
+fix_height <- function(h){
+  
+  if (str_detect(h, "-")) {
+    
+    fi <- unlist(str_split(h, "-"))
+    h <- as.numeric(fi[1])*12 + as.numeric(fi[2])
+    
+  } 
+  
+  return(h)
+  
+}
+
+fix_height(nba$Height)
+```
+
