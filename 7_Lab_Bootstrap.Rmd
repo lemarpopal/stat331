@@ -1,9 +1,33 @@
 ---
 title: "7_Lab_Bootstrap"
+author: Lemar Popal
+date: March 9, 2019
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+```{r}
+library(tidyverse)
+```
+
+1. Import Data
+```{r}
+# Read in the data
+my_path <- "/Users/lemarpopal/Desktop/STAT-331/sf-salaries/"
+
+salaries <- read.csv(paste0(my_path, "Salaries.csv"), header=TRUE, na=c("Not Provided", "Not provided"))
+```
+
+2. Plot a histogram of Total Pay with an overlaying density.
+Note: Some outliers at the far end of the histogram are cut off by the xlim() function so we could zoom in on where the bulk of the data is. 
+```{r warning=FALSE}
+salaries %>% 
+  ggplot(aes(x=TotalPay)) + geom_histogram(aes(y= ..density..)) + stat_function(fun = dnorm, args = list(mean = mean(salaries$TotalPay), sd = sd(salaries$TotalPay)), color = "darkred", size = 2) + xlim(0, 3*(10**5))
+```
+
+3. The mean may not be a good statistic to use here. The mean is particularly susceptible to outliers. This means that if there are really large or small salaries, the mean will be pulled to the right 
+
 
