@@ -40,12 +40,67 @@ salaries %>%
 
 5. Compute a 95% t-confidence interval for the mean Total Pay.
 ```{r}
-tidy(t.test(salaries$TotalPay))
+tidy(t.test(salaries$TotalPay)) %>% select(conf.low, conf.high)
 ```
 
 
 6. Use the bootstrap procedure to construct a 95% bootstrap confidence interval for the mean Total Pay. Compare this interval to your t-interval in (3). Be sure to explain any differences you see.
 ```{r}
-
+salaries_boots <- replicate(1000, sample(salaries$TotalPay, replace=TRUE), simplify = FALSE)
 ```
+
+```{r}
+salaries_stats <- data.frame(
+  means = map_dbl(salaries_boots, mean),
+  medians = map_dbl(salaries_boots, median)
+)
+```
+
+```{r}
+tidy(t.test(salaries_stats$means)) %>% select(conf.low, conf.high)
+```
+This confidence interval tells us that we are 95% confident that the population mean of Total Pay is between \$74757.46 and \$74773.53. Compared to the t-interval we calculated earlier, this interval is more narrow. This makes sense because now that the distribution is approximately normal, our t-test conditions are met so the interval is more accurate. 
+
+```{r include=FALSE}
+salaries_stats %>%
+  ggplot(aes(x=means)) + geom_histogram(aes(y= ..density..), bins=40) + stat_function(fun = dnorm, args = list(mean = mean(salaries_stats$means), sd = sd(salaries_stats$means)), color = "darkred", size = 2) 
+
+# salaries_stats %>% 
+#   ggplot(aes(x=means)) + geom_histogram(aes(y= ..density..)) + stat_function(fun = dnorm, args = list(mean = mean(salaries_stats$means), sd = sd(salaries_stats$means)), color = "darkred", size = 2) + xlim(0, 3*(10**5))
+```
+
+7. 
+```{r}
+# Midhinge = (Q1 + Q3) / 2
+calc_midhinge <- function(data) {
+  Q1 = quantile(data, 0.25)
+  Q3 = quantile(data, 0.75)
+  
+  return(as.numeric(Q1 + Q3) / 2)
+}
+
+calc_trimmed_mean <- function(data, percent_to_trim) {
+  #
+}
+
+# Trimmed Mean 
+
+calc_midhinge(salaries$TotalPay)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
