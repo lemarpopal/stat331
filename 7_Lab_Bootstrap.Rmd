@@ -11,6 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(tidyverse)
+library(lubridate)
+library(modelr)
+library(broom)
 ```
 
 1. Import Data
@@ -28,6 +31,21 @@ salaries %>%
   ggplot(aes(x=TotalPay)) + geom_histogram(aes(y= ..density..)) + stat_function(fun = dnorm, args = list(mean = mean(salaries$TotalPay), sd = sd(salaries$TotalPay)), color = "darkred", size = 2) + xlim(0, 3*(10**5))
 ```
 
-3. The mean may not be a good statistic to use here. The mean is particularly susceptible to outliers. This means that if there are really large or small salaries, the mean will be pulled to the right 
+3. The mean may not be a good statistic to use here. The mean is particularly susceptible to outliers. This means that if there are really small or large salaries, the mean will be pulled towards the outlier, either left or right. A more appropriate statistic to use is the median, which is a value where half the salaries are below, and the other half are above. The median is much more resistant to being affected by outliers, because even if there are very far out outliers, the median will not move much. 
 
+
+##### check in office hours
+4. This does not seem resonable. In the sample of salaries in the plot above, we can see that the histogram does not fit under the normal curve very well. It looks like the distribution is bimodal (two peaks). Thus, we cannot conclude that the population is normally distributed. 
+
+
+5. Compute a 95% t-confidence interval for the mean Total Pay.
+```{r}
+tidy(t.test(salaries$TotalPay))
+```
+
+
+6. Use the bootstrap procedure to construct a 95% bootstrap confidence interval for the mean Total Pay. Compare this interval to your t-interval in (3). Be sure to explain any differences you see.
+```{r}
+
+```
 
