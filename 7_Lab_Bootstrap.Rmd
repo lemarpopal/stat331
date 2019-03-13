@@ -79,19 +79,54 @@ calc_midhinge <- function(data) {
   return(as.numeric(Q1 + Q3) / 2)
 }
 
-calc_trimmed_mean <- function(data, percent_to_trim) {
-  #
-}
-
 # Trimmed Mean 
-
-calc_midhinge(salaries$TotalPay)
+calc_trimmed_mean <- function(data, percent) {
+  # divide by 100 to get a number between 0 and 1
+  percent = percent / 100 
+  
+  # in order to trim data off ends, we first need to sort the vector 
+  sorted_data = sort(data)
+  
+  # determine how many observations to trim off each end of sorted vector
+  num_to_remove = floor(percent * length(sorted_data))
+  
+  trimmed_data = sorted_data[num_to_remove : length(sorted_data)-num_to_remove]
+  
+  return(mean(trimmed_data))
+}
 ```
 
 
+8. Perform the bootstrap procedure and produce graphs of the distributions.
+```{r}
+bootstrapped_df <- data.frame(
+  midhinge = map_dbl(salaries_boots, calc_midhinge),
+  trimmed_mean_5 = map_dbl(salaries_boots, ~calc_trimmed_mean(., 5)),
+  trimmed_mean_10 = map_dbl(salaries_boots, ~calc_trimmed_mean(., 10)),
+  trimmed_mean_25 = map_dbl(salaries_boots, ~calc_trimmed_mean(., 25)),
+  median = map_dbl(salaries_boots, median)
+)
+```
 
+```{r}
+bootstrapped_gathered_df <- bootstrapped_df %>% gather(key="distribution", value="value")
 
+ggplot(bootstrapped_gathered_df, aes(x=value)) + geom_histogram(aes(y= ..density..), bins=40) + facet_wrap(~ distribution, scales="free")
+```
 
+9. Compute 95% bootstrap confidence intervals for the statistics listed in (7) and compare to your intervals for the mean from above.
+```{r}
+t_test_results <- map(bootstrapped_df, ~(tidy(t.test(.)) %>% select(conf.low, conf.high)))
+
+t <- data.frame(matrix(unlist(temp), nrow=length(temp), byrow=T))
+t <- t %>% 
+  rename(
+    conf.low = X1,
+    conf.high = X2
+  )
+rownames(t) <- c("midhinge", "5% Trimmed mean", "10% Trimmed mean", "25% Trimmed mean", "median")
+t
+```
 
 
 

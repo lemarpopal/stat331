@@ -1,0 +1,108 @@
+---
+title: "InClass_Review2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(broom)
+library(modelr)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 1. Simulate a sample of size 100 from the standard Cauchy distribution. (Hint: Remember the p, q, r,
+# d functions for simulation!)
+
+cauchy_samples <- rcauchy(100)
+```
+
+```{r include=FALSE}
+# 2. Take 1000 bootstrap samples from your simulated sample. Make a 95% confidence interval for (a) the
+# mean and (b) the median.
+
+my_boots <- replicate(1000, sample(cauchy_samples, replace=TRUE), simplify = FALSE)
+
+boot_means <- map_dbl(my_boots, mean)
+
+boot_medians <- map_dbl(my_boots, median)
+```
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# 3. Repeat (1) and (2) ten times. That is, you should have a NEW simulated Cauchy sample each time.
+# Save the upper and lower bounds of the mean and median confidence intervals at each step. (Hint:
+# You may want to write a loop, like the one in my bootstrapping notes!)
+mean_CIs <- data.frame()
+median_CIs <- data.frame()
+means <- c()
+medians <- c()
+
+set.seed(36)
+for(i in 1:10){
+  
+  my_sample <- rcauchy(100)
+  
+  means <- c(means, mean(my_sample))
+  medians <- c(medians, median(my_sample))
+  
+  my_boots <- replicate(1000, sample(my_sample, replace = TRUE), simplify = FALSE)
+  
+  boot_means <- map_dbl(my_boots, mean)
+  boot_medians <- map_dbl(my_boots, median)
+  
+  mean_CIs <- rbind(mean_CIs, quantile(boot_means, c(0.025, .975)))
+  
+  median_CIs <- rbind(median_CIs, quantile(boot_medians, c(0.025, .975)))
+}
+
+names(mean_CIs) = c("lower", "upper")
+names(median_CIs) = c("lower", "upper")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 4. Make a plot showing the 10 mean confidence intervals, and another plot showing the 10 median
+# confidence intervals. (It is your choice what kind of plot to use!)
+
+# final_results <- full_join(mean_CIs, median_CIs) %>%
+#   mutate(
+#     try = rep(1:10, 2),
+#     type = c(rep("Means", 10), rep("Medians", 10)),
+#     means = rep(means, 2)
+#   )
+
+
+ggplot(mean_CIs, aes(x = means)) + 
+    geom_errorbarh(aes(xmin=lower, xmax=upper, y = 1:10), size = 2, color="red", alpha=0.5) +
+  geom_point(aes(x = means, y = 1:10)) + ggtitle("Plot of the 10 Mean Confidence Intervals")
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(median_CIs, aes(x = medians)) + 
+    geom_errorbarh(aes(xmin=lower, xmax=upper, y = 1:10), size = 2, color="red", alpha=0.5) +
+  geom_point(aes(x = medians, y = 1:10)) + ggtitle("Plot of the 10 Median Confidence Intervals")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

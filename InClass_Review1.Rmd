@@ -1,0 +1,61 @@
+---
+title: "InClass_Review1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(broom)
+```
+```{r}
+message <- read.csv("https://www.dropbox.com/s/ctplwmkvey4yo0e/cs_encrypted.txt?dl=1",
+stringsAsFactors = FALSE, header = TRUE)$x
+```
+
+
+```{r}
+shift_char <- function(char, shift) {
+  # collapse list of strings into single string
+  letters_str = paste(letters, collapse="")
+  
+  # find position of the char in alphabet
+  position = as.numeric(str_locate(letters_str, char))[1]
+  
+  # get new position of char
+  new_position = (position + shift) %% 26 
+  
+  # get shifted char
+  shifted_char = str_sub(temp, new_position, new_position)
+  
+  return(shifted_char)
+}
+
+caesar <- function(word, shift) {
+  
+  # get list of chars 
+  list_of_chars = unlist(str_split(word, pattern=""))
+  
+  return(paste(unlist(map(list_of_chars, ~shift_char(., shift))), collapse=""))
+}
+```
+
+```{r}
+caesar("sfzqlov", -23)
+```
+
+```{r}
+#map(0:26, ~caesar(message[1], .))
+
+# shift of 9 was used
+caesar(message[1], 9)
+```
+
+```{r}
+paste(unlist(map(message, ~caesar(., 9))), collapse=" ")
+```
+
+
