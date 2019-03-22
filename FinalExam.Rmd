@@ -1,0 +1,155 @@
+---
+title: "Final_Exam"
+author: Lemar Popal
+date: March 21, 2019
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(tidyverse)
+library(lubridate)
+library(broom)
+library(modelr)
+```
+
+```{r}
+nutrition <- read.csv("https://dropbox.com/s/ucwls7j3zlb5sas/cereal.csv?dl=1")
+```
+
+```{r}
+##### delete 
+nutrition %>% 
+  filter(potass < 0)
+```
+
+# Part One
+1. 
+```{r}
+adjust_cereal <- function(measurement, num_cups, weight, string) {
+  if (string == "volume") {
+    return(measurement/num_cups)
+  }
+  else if (string == "weight") {
+    return(measurement/weight)
+  }
+}
+```
+
+```{r}
+##### delete
+#adjust_cereal(100, 0.75, 1.3, "weight")
+#nutrition
+```
+
+2. 
+```{r}
+cols = c("calories", "protein", "fat", "sodium", "fiber", "carbo", "sugars", "potass")
+
+nutrition <- nutrition %>%
+  mutate(
+    calories = adjust_cereal(calories, cups, weight, "volume"), 
+    protein = adjust_cereal(protein, cups, weight, "volume"),
+    fat = adjust_cereal(fat, cups, weight, "volume"),
+    sodium = adjust_cereal(sodium, cups, weight, "volume"),
+    fiber = adjust_cereal(fiber, cups, weight, "volume"),
+    carbo = adjust_cereal(carbo, cups, weight, "volume"),
+    sugars = adjust_cereal(sugars, cups, weight, "volume"),
+    potass = adjust_cereal(potass, cups, weight, "volume")
+  )
+
+### see if there is a better way of doing this without code repetition
+```
+
+# Part Two
+1. 
+a. 
+```{r}
+nutrition <- nutrition %>% 
+  mutate(
+    Seed_Type = as.factor(case_when(
+      str_extract(tolower(name), "wheat|oat|bran") == "wheat" ~ "wheat",
+      str_extract(tolower(name), "wheat|oat|bran") == "oat" ~ "oat",
+      str_extract(tolower(name), "wheat|oat|bran") == "bran" ~ "bran",
+      TRUE ~ "unknown"
+    )
+  ))
+
+levels(nutrition$Seed_Type) <- c("wheat", "oat", "bran", "unknown")
+```
+
+
+b. 
+```{r}
+nutrition %>% 
+  gather(key = "substance", value = "amount", cols) %>% 
+  group_by(Seed_Type, substance) %>% 
+  summarise(avg_amount = mean(amount)) %>% 
+  ungroup() %>% 
+  filter(substance %in% c("carbo", "fat", "fiber", "potass")) %>% 
+  ggplot(aes(x=Seed_Type, y=avg_amount)) + geom_col() + facet_wrap(~ substance, scales="free")
+```
+From the plots above, we see that wheat cereals are better in most ways, including low in carbs and fats, and high in fiber and potassium. 
+
+c. 
+```{r}
+nutrition %>% 
+  gather(key = "substance", value = "amount", cols) %>% 
+  group_by(Seed_Type, substance) %>% 
+  summarise(avg_amount = mean(amount)) %>% 
+  ungroup() %>% 
+  filter(substance %in% c("carbo", "protein")) %>% 
+  ggplot(aes(x=Seed_Type, y=avg_amount)) + geom_col() + facet_wrap(~ substance, scales="free")
+```
+From the plot above, we can see that oats are high in low in carbs and the highest in average protein per serving. 
+
+
+2. 
+a. 
+```{r}
+nrow(nutrition %>% filter(sugars < 6))
+```
+You would only be allowd to eat 26 of the cereals in the dataset. 
+
+
+b. 
+```{r}
+cereals = c("Lucky Charms", "Raisin Bran")
+substances = c("calories", "fat", "sodium", "sugars")
+
+nutrition %>% 
+  filter(name %in% cereals) %>% 
+  gather(key = "substance", value = "amount", cols) %>% 
+  filter(substance %in% substances) %>% 
+  ggplot(aes(x=name, y=amount)) + geom_col() + facet_wrap(~ substance, scales="free") + 
+  xlab("Cereal Name") + ylab("Amount per Serving") + ggtitle("Lucky Charms vs Raisin Bran")
+```
+
+1. 
+```{r}
+nutrition %>% 
+  ggplot(aes(x=sugars, y=rating)) + geom_point() +
+  ggtitle("Relationship Between Sugar Content and Consumer Reports Rating")
+```
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

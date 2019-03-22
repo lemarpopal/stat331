@@ -41,7 +41,7 @@ median_CIs <- data.frame()
 means <- c()
 medians <- c()
 
-set.seed(36)
+set.seed(41)
 for(i in 1:10){
   
   my_sample <- rcauchy(100)

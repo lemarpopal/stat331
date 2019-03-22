@@ -9,24 +9,26 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 library(lubridate)
 library(modelr)
 library(broom)
+
+set.seed(35)
 ```
 
 1. Import Data
 ```{r}
 # Read in the data
-my_path <- "/Users/lemarpopal/Desktop/STAT-331/sf-salaries/"
+my_path <- "/Users/lemarpopal/Desktop/github/STAT-331/sf-salaries/"
 
 salaries <- read.csv(paste0(my_path, "Salaries.csv"), header=TRUE, na=c("Not Provided", "Not provided"))
 ```
 
 2. Plot a histogram of Total Pay with an overlaying density.
 Note: Some outliers at the far end of the histogram are cut off by the xlim() function so we could zoom in on where the bulk of the data is. 
-```{r warning=FALSE}
+```{r message=FALSE, warning=FALSE}
 salaries %>% 
   ggplot(aes(x=TotalPay)) + geom_histogram(aes(y= ..density..)) + stat_function(fun = dnorm, args = list(mean = mean(salaries$TotalPay), sd = sd(salaries$TotalPay)), color = "darkred", size = 2) + xlim(0, 3*(10**5))
 ```
@@ -34,7 +36,6 @@ salaries %>%
 3. The mean may not be a good statistic to use here. The mean is particularly susceptible to outliers. This means that if there are really small or large salaries, the mean will be pulled towards the outlier, either left or right. A more appropriate statistic to use is the median, which is a value where half the salaries are below, and the other half are above. The median is much more resistant to being affected by outliers, because even if there are very far out outliers, the median will not move much. 
 
 
-##### check in office hours
 4. This does not seem resonable. In the sample of salaries in the plot above, we can see that the histogram does not fit under the normal curve very well. It looks like the distribution is bimodal (two peaks). Thus, we cannot conclude that the population is normally distributed. 
 
 
@@ -57,22 +58,20 @@ salaries_stats <- data.frame(
 ```
 
 ```{r}
-tidy(t.test(salaries_stats$means)) %>% select(conf.low, conf.high)
+quantile(salaries_stats$means, c(0.025, .975))
 ```
-This confidence interval tells us that we are 95% confident that the population mean of Total Pay is between \$74757.46 and \$74773.53. Compared to the t-interval we calculated earlier, this interval is more narrow. This makes sense because now that the distribution is approximately normal, our t-test conditions are met so the interval is more accurate. 
+This confidence interval tells us that we are 95% confident that the population mean of Total Pay is between \$74512 and \$75036. The bootstrap interval is slightly wider. 
 
-```{r include=FALSE}
+```{r message=FALSE, warning=FALSE}
 salaries_stats %>%
   ggplot(aes(x=means)) + geom_histogram(aes(y= ..density..), bins=40) + stat_function(fun = dnorm, args = list(mean = mean(salaries_stats$means), sd = sd(salaries_stats$means)), color = "darkred", size = 2) 
-
-# salaries_stats %>% 
-#   ggplot(aes(x=means)) + geom_histogram(aes(y= ..density..)) + stat_function(fun = dnorm, args = list(mean = mean(salaries_stats$means), sd = sd(salaries_stats$means)), color = "darkred", size = 2) + xlim(0, 3*(10**5))
 ```
 
 7. 
 ```{r}
 # Midhinge = (Q1 + Q3) / 2
 calc_midhinge <- function(data) {
+  
   Q1 = quantile(data, 0.25)
   Q3 = quantile(data, 0.75)
   
@@ -81,6 +80,7 @@ calc_midhinge <- function(data) {
 
 # Trimmed Mean 
 calc_trimmed_mean <- function(data, percent) {
+  
   # divide by 100 to get a number between 0 and 1
   percent = percent / 100 
   
@@ -116,9 +116,10 @@ ggplot(bootstrapped_gathered_df, aes(x=value)) + geom_histogram(aes(y= ..density
 
 9. Compute 95% bootstrap confidence intervals for the statistics listed in (7) and compare to your intervals for the mean from above.
 ```{r}
-t_test_results <- map(bootstrapped_df, ~(tidy(t.test(.)) %>% select(conf.low, conf.high)))
+results <- map(bootstrapped_df, ~quantile(., c(0.025, .975))) 
 
-t <- data.frame(matrix(unlist(temp), nrow=length(temp), byrow=T))
+# convert named list of results to data frame and add names
+t <- data.frame(matrix(unlist(results), nrow=length(results), byrow=T))
 t <- t %>% 
   rename(
     conf.low = X1,
@@ -127,9 +128,7 @@ t <- t %>%
 rownames(t) <- c("midhinge", "5% Trimmed mean", "10% Trimmed mean", "25% Trimmed mean", "median")
 t
 ```
-
-
-
+As we trim values (outliers) off the mean, we find that the bootstrap confidence interval for the mean decreases. The CI for the mean was (74511.52, 75025.13) and becomes as low as (51863.63, 52385.52) when we trim 25% off the ends of the values. I would probably use a combination of the 5% trimmed mean and median because it will still strip outliers, and the median is robust against outliers.  This will give us a good sense of what the actual typical salary is. 
 
 
 
