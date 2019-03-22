@@ -128,21 +128,74 @@ nutrition %>%
   xlab("Cereal Name") + ylab("Amount per Serving") + ggtitle("Lucky Charms vs Raisin Bran")
 ```
 
+# Part Three
 1. 
+a.
 ```{r}
 nutrition %>% 
-  ggplot(aes(x=sugars, y=rating)) + geom_point() +
+  ggplot(aes(x=sugars, y=rating)) + geom_point() + stat_smooth(method="lm") +
   ggtitle("Relationship Between Sugar Content and Consumer Reports Rating")
 ```
 
-
+b.
 ```{r}
+tidy(summary(lm(rating ~ sugars, data=nutrition)))
+```
+From the output of the linear model summary above, we see that there is a negative correlation between the amount of sugars and the rating given by Consumer Reports. This linear model is statistically significant because the p.value is less than 0.05. 
 
+
+2. 
+a. 
+```{r}
+# get vector of ratings for General Mills
+g_ratings <- nutrition %>% 
+  filter(mfr == "G") %>% 
+  select(rating) %>% pull()
+
+# get vector of ratings for Kellog
+k_ratings <- nutrition %>% 
+  filter(mfr == "K") %>% 
+  select(rating) %>% pull()
+
+# mean(g_ratings)
+# mean(k_ratings)
 ```
 
 
+```{r}
+tidy(t.test(k_ratings, g_ratings, alternative="greater")) 
+```
+
+My null hypothesis is that the average rating of cereals between the two brands is equal, and my alternative is that the Kellog receives higher ratings. We are allowed to use the t-test because we consider the cereals in the dataset to be a random sample of all cereals offered by the two manufacturers, they are independent, and the ratings are normal. The p.value is less than 0.05, so we can reject the null hypothesis and conclude that we are 95% confident Kellog receives higher ratings than GM. 
 
 
+b. 
+```{r}
+nutrition %>% 
+  filter(mfr == "K" | mfr == "G") %>% 
+  group_by(mfr) %>% 
+  summarise(percent_good = mean(rating > 50) * 100)
+```
+Kellog has a higher percent of good cereals in this data set. 
+
+
+c. 
+```{r}
+kellog_boots <- replicate(1000, sample(k_ratings, replace = TRUE), simplify = FALSE)
+
+gm_boots <- replicate(1000, sample(g_ratings, replace = TRUE), simplify = FALSE)
+```
+
+```{r}
+manufacturers <- data.frame(
+    kellog_good_cereals = map_dbl(kellog_boots, ~sum(. > 50)),
+    gm_good_cereals = map_dbl(gm_boots, ~sum(. > 50))
+  )
+```
+
+```{r}
+map(manufacturers, print)
+```
 
 
 
