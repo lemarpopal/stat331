@@ -1,0 +1,544 @@
+---
+title: "Tidy Text"
+author: "Anish Yakkala, Lemar Popal, Brooke Hanna, Michal Golovanevsky"
+date: "3/7/2019"
+output: 
+  rmarkdown::html_vignette:
+    fig_width: 7
+    fig_height: 5
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Tidy Text}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## What is Tidy Text?
+
+Tidy text is a library made with the [tidy philosophy](https://tidyverse.tidyverse.org/articles/manifesto.html) in mind. The infastructure works with packages like [dplyr](https://dplyr.tidyverse.org/), [broom](https://cran.r-project.org/web/packages/broom/vignettes/broom.html), [tidyr](https://tidyr.tidyverse.org/), and [ggplot2](https://ggplot2.tidyverse.org/reference/).
+
+Tidy text makes it so you can turn a corpus, a collection of written texts, into a tidy dataframe. Such that each token is a column. It also makes it easy to do various Natural Language Processes in R.
+
+## Tokenization
+
+Let's start by reading in the dataset we will be working with throughout this vignette, and loading our main libraries!
+
+The data we will be working with in this Vignette are the ratings of [Cal Poly SLO](https://www.calpoly.edu/) faculty written by students on http://polyratings.com. It includes the Reviews, Aggregate Ratings, Subjects, Classes, and many more of all the Professors on PolyRatings.
+
+<font size="2"> (Note: If you are interested in how this data was collected please contact [Anish Yakkala](https://users.csc.calpoly.edu/~ayakkala/index.html) for information on how the data was scraped!)</font>
+
+```{r read_file, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(tidytext)
+library(lubridate)
+
+polyrating <- read_csv(
+  "https://raw.githubusercontent.com/ayakkala1/stat_final/master/vignettes/polyrating.csv"
+                      ) %>% 
+                mutate(date = parse_date_time(date,"%m%y")) %>%
+                drop_na()
+```
+
+The bread and butter of Text Analysis is tokenizing a corpus. This is to get a dataframe such that each row is a unique token of the corpus. A token can be a single word, combination of words, or even a sentence. We will be focusing right now on a single word, also called unigram, for now.
+
+```{r tokenize}
+tokens <- polyrating %>%
+  unnest_tokens(word,review) %>%
+  select(word,everything())
+
+tokens %>%
+  select(word, agg_rating, subject)
+```
+
+Let's look at the top 5 most common words in the Polyrating Reviews.
+
+```{r non_stop_freq}
+tokens %>%
+  count(word) %>%
+  arrange(desc(n)) %>%
+  top_n(5, n)
+```
+
+Not surpising. These words are often deemed "stop words" in Natural Language Processing, they take up a lot of space and don't give us very interesting information about the corpus.
+
+To remedy this we will read in a dataset of stop words provided by tidytext and perform an anti-join on our tokens. 
+
+(Note: Anti Join simply "return all rows from x where there are not matching values in y, keeping just columns from x.")
+
+```{r stopword, message=FALSE, warning=FALSE}
+data(stop_words)
+
+tokens <- tokens %>%
+  anti_join(stop_words)
+```
+
+```{r stop_common_words}
+tokens %>%
+  count(word) %>%
+  arrange(desc(n)) %>%
+  top_n(5, n)
+```
+
+As you can see the top 5 most common words have changed!
+
+```{r simple_freq_graph}
+tokens %>%
+  count(word, sort = TRUE) %>%
+  filter(n > 17500) %>%
+  mutate(word = reorder(word, n )) %>%
+  ggplot(aes(word, n, fill = word )) + geom_col() + 
+  xlab(NULL) + coord_flip() + guides(fill=FALSE) + ylab("Term Frequency") +
+  ggtitle("Most common words in PolyRating Reviews") + guides(fill=FALSE)
+```
+
+You can also customize the stop words by adding your own words to the Stop Words lexicon.
+
+For a lot of the following analysis we will take advantage of customizing the stopwords lexicon. Professor names appear a lot, so we remove that. We also were curious about tokens that involve gender so we remove certain gender words from the stopwords to include them in our analyis.
+
+```{r message=FALSE, warning=FALSE}
+library(stringr)
+
+names <- tokens %>%
+  select(prof_name) %>%
+  distinct(prof_name) %>%
+  separate(prof_name, c("last", "first"), sep = ",") %>%
+  gather() %>%
+  select(value) %>%
+  mutate(value = str_to_lower(value)) %>%
+  pull(value)
+
+custom_stop_words <-stop_words %>%
+  filter(!(word %in% c("her","she","he","his"))) %>%
+  add_row(word = names,lexicon = "SMART")
+```
+
+### Some examples
+
+Here is a cool way to see how word use changes over time.
+
+```{r words_over_time, message=FALSE, warning=FALSE}
+year_counts <- polyrating %>%
+  unnest_tokens(word,review) %>%
+  select(word,everything()) %>%
+  count(date, word) %>%
+  complete(date, word, fill = list(n = 0)) 
+
+year_totals <- year_counts %>%
+  group_by(date) %>%
+  summarize(year_total = sum(n))
+
+year_counts %>%
+  left_join(year_totals, by = "date") %>%
+  filter(word %in% c("terrible", "he", "confusing", "she", "easy", "hard")) %>%
+  ggplot(aes(date, n / year_total)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~ word, scales = "free_y") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  ylab("% frequency of word in review") +
+  xlab(element_blank())
+```
+
+Let's end by comparing the Term Frequencies between Chemistry and Statistics to see which words are used a lot more in the Chemistry Reviews compared to the Statistics reviews. 
+
+To start let's set up a dataframe to make term frequencies for each subject.
+
+```{r vs_setup, message=FALSE}
+review_words <- tokens %>%
+  count(subject, word, sort = TRUE) %>%
+  ungroup()
+
+total_words <- review_words %>%
+  group_by(subject) %>%
+  summarize(total = sum(n))
+
+review_words <- left_join(review_words, total_words)
+
+review_words %>%
+  mutate(freq = n/total)
+```
+
+Now to visualizing the differences.
+
+```{r statvschem}
+review_words %>%
+  filter(subject %in% c("STAT","CHEM")) %>%
+  mutate(freq = n/total) %>%
+  unite(freq_n,c(freq,n),sep="::") %>%
+  select(subject,freq_n,word) %>%
+    spread(subject,freq_n) %>%
+    separate(CHEM,c("CHEM_FREQ","CHEM_N"),sep="::") %>%
+    separate(STAT,c("STAT_FREQ","STAT_N"),sep="::") %>%
+    drop_na() %>%
+    mutate(CHEM_FREQ = as.numeric(CHEM_FREQ),
+           STAT_FREQ = as.numeric(STAT_FREQ)) %>%
+    mutate(diff = CHEM_FREQ - STAT_FREQ) %>%
+    top_n(10, diff) %>%
+    mutate(word = fct_reorder(word, diff)) %>%
+    ggplot(aes(word, diff,fill = word)) + geom_col() +
+      coord_flip() + xlab(element_blank()) + ylab("Difference") + guides(fill=FALSE) + 
+      ggtitle("Words heavily used in Chem compared to Stats")
+```
+
+Not surpising that "chem" is used a lot more in Chemistry reviews. However it is interesting that "dr" is used a lot more in Chemistry reviews versus Statis Reviews.
+
+## Sentiment Analysis
+
+PolyRating can become quite a heated place for students. This is prime data for doing a common practice in NLP called "Sentiment Analysis". Sentiment Analysis is the process of identifying and categorizing the attitudes and opinions expressed in a corpus.
+
+Tidy Text gives us 3 datasets to conduct our own Sentiment Analysis. Each helps us tell things about the sentiment of a text, but each in very different ways.
+
+Let's take a look.
+
+### AFINN
+
+```{r AFINN_intro}
+set.seed(2017)
+
+get_sentiments("afinn") %>%
+  sample_n(10)
+```
+
+AFINN scores unigrams between $(-5,5)$. As you can guess, negative means a negative sentiment, positive means a positive sentiment, and zero is neutral. This is useful if you want work with sentiment as a quantitative variable. Such as using it in a scatterplot or regressor.
+
+### BING
+
+```{r BING_intro}
+set.seed(2010)
+
+get_sentiments("bing") %>%
+  sample_n(10)
+```
+
+BING scores unigrams as "positive" or "negative". This is useful if you want sentiment as a Binarized variable. This makes it easy to do analysis that involves Counts & Proportions.
+
+### NRC
+
+```{r NRC_intro}
+set.seed(2010)
+
+get_sentiments("nrc") %>%
+  sample_n(10)
+```
+
+NRC places unigrams into various classes of which they may fall either into a positive or negative category. This may be useful if you want to classify your corpus in a more general way.
+
+### Application
+
+Let's use NRC to explore the PolyRating data. We will begin by extracting the "anger" words from the NRC Lexicon.
+
+```{r read_anger, message=FALSE, warning=FALSE}
+nrc_anger <- get_sentiments("nrc") %>%
+  filter(sentiment == "anger")
+```
+
+Now let's do an inner join to see the words that were both in the "anger" dictionary and PolyRating Reviews, and then see their counts.
+
+```{r join_anger, message=FALSE, warning=FALSE}
+tokens %>%
+  inner_join(nrc_anger) %>%
+  count(word, sort = TRUE) %>%
+  top_n(5, n)
+```
+
+This time let's use the Bing lexicon to see how Sentiment in various [COSAM](http://www.cosam.calpoly.edu/) Departments change over time.
+
+```{r cosam_sentiment_time, message=FALSE}
+tokens %>%
+  inner_join(get_sentiments("bing")) %>%
+    filter(subject %in% c("MATH", "STAT", "CHEM", "PHYS", "BIO"," LS")) %>%
+    count(date, subject, sentiment) %>%
+      spread(sentiment, n, fill = 0) %>%
+      mutate(sentiment = positive - negative) %>%
+      ggplot(aes(date, sentiment,fill = subject)) + geom_col(show.legend = FALSE) +
+             facet_wrap(~subject) + ggtitle("COSAM Sentiment Over Time") + 
+             theme(panel.spacing.x = unit(1, "lines"), 
+                   plot.margin = margin(.3, .8, .3, .8, "cm")) +
+             xlab(element_blank()) + ylab("Sentiment")
+```
+
+Furthermore, using Bing again, let's see what words contributed most to the Postive Sentiment and to the Negative Sentiment.
+
+Let's first get our token counts with the Bing lexicon joined.
+
+```{r bing_pos_neg_work, message=FALSE, warning=FALSE}
+bing_word_counts <- tokens %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+bing_word_counts
+```
+
+Let's see the side by side comparison.
+
+```{r bing_comparison_graph, message=FALSE}
+bing_word_counts %>%
+  group_by(sentiment) %>%
+  top_n(10) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = sentiment)) + geom_col(show.legend = FALSE) +
+             facet_wrap(~sentiment, scales = "free_y") +
+             labs(y = "Contribution to sentiment",
+                  x = NULL) +
+             coord_flip() + 
+             ggtitle("PolyRating Text Sentiment Contributions")  +
+             theme(plot.title = element_text(hjust = 0.5))
+```
+
+Finally, let's see which Subjects have the most Negative and Positive Sentiments using Bing.
+
+```{r Ratio_setup, message=FALSE}
+bingnegative <- get_sentiments("bing") %>% 
+  filter(sentiment == "negative")
+
+bingpositive <- get_sentiments("bing") %>% 
+  filter(sentiment == "positive")
+
+wordcounts <- tokens %>%
+  group_by(subject) %>%
+  summarize(words = n())
+```
+
+Negative : 
+
+```{r Negative_Ratio, message=FALSE, warning=FALSE}
+tokens %>%
+  semi_join(bingnegative) %>%
+  group_by(subject) %>%
+  summarize(negativewords = n()) %>%
+  left_join(wordcounts, by = c("subject")) %>%
+  mutate(ratio = negativewords/words) %>%
+  ungroup() %>%
+  arrange(desc(ratio)) %>%
+  top_n(5, ratio)
+```
+
+Positive : 
+
+```{r Positive_Ratio, message=FALSE}
+tokens %>%
+  semi_join(bingpositive) %>%
+  group_by(subject) %>%
+  summarize(positivewords = n()) %>%
+  left_join(wordcounts, by = c("subject")) %>%
+  mutate(ratio = positivewords/words) %>%
+  ungroup() %>%
+  arrange(desc(ratio)) %>%
+  top_n(5, ratio)
+```
+
+## TF-IDF
+
+Let's say we want to find what words are the most important to reviews for each Subject. One guess would be that using the words that are the most frequent in the reviews for the Subject would be the most representative. While it can be true in some cases, recall when we first looked at the most frequent words in the PolyRating Reviews. Words like "the" and "a" were the most frequent, and while it is true they are also just simple conjuctions. We need a new metric that can reveal to us the most important words for each group we are interested in.
+
+Before we reveal it let's take a look at how the Term Frequencies are distributed between COSAM Subjects.
+
+```{r term_freq_graph,message=FALSE, warning=FALSE}
+review_words <- tokens %>%
+  count(subject, word, sort = TRUE) %>%
+  ungroup()
+
+total_words <- review_words %>%
+  group_by(subject) %>%
+  summarize(total = sum(n))
+
+review_words <- left_join(review_words, total_words)
+
+review_words %>%
+  filter(subject %in% c("MATH","STAT","CHEM","PHYS","BIO","LS")) %>%
+  ggplot(aes(n/total, fill = subject)) +
+  geom_histogram(show.legend = FALSE) +
+  xlim(NA, 0.0009) +
+  facet_wrap(~subject, ncol = 2, scales = "free_y") +
+  ggtitle("Unigram Count Distribution by COSAM") + 
+  xlab("Frequencies")
+```
+
+They all look to be distributed very similarily, with a heavy right tail.
+
+This brings us to the idea of TF-IDF (Term Frequency - Inverse Document Frequence). Seeing those heavy right tails indicates that there are some rare words that define each Subject. Those words can be important words that define a document in a corpus. To remedy this we use TF-IDF.
+
+For a term $i$ in document $j$.
+
+\[
+w_{i,j} = tf_{i,j} * log(\frac{N}{df_{i}})
+\]
+
+$tf_{i,j} =$ number of occurrenes of $i$ in $j$.
+
+$df_{i} =$ number of documents containing $i$.
+
+$N =$ total number of documents
+
+Tidytext makes it easy to get the TF-IDF for our tokens.
+
+```{r get_tf_words}
+review_tf_words <- review_words %>%
+  bind_tf_idf(word, subject, n)
+
+review_tf_words %>%
+  select(word, n, tf, idf, tf_idf)
+```
+
+As you can see very common words with a high term frequency are given a very low tf-idf score.
+
+Let's now see what the most important words are for the COSAM subjects using TF-IDF!
+
+```{r cosam_tf_graph, message=FALSE}
+review_tf_words %>%
+  arrange(desc(tf_idf)) %>%
+  mutate(word = factor(word, levels = rev(unique(word)))) %>% 
+  filter(subject %in% c("MATH","STAT","CHEM","PHYS","BIO","LS")) %>%
+  group_by(subject) %>% 
+  top_n(10) %>% 
+  ungroup %>%
+  ggplot(aes(word, tf_idf, fill = subject)) +
+    geom_col(show.legend = FALSE) +
+    labs(x = NULL, y = "tf-idf") +
+    facet_wrap(~subject, ncol = 2, scales = "free") +
+    coord_flip() + ggtitle("Most Important words by TF-IDF")  +
+    scale_x_discrete(expand = c(0,0.5))
+```
+
+## N-grams
+
+So far we have been tokenizing the corpus by individual words. However we can tokenize by any amount of words we want. In general we tokenize by n-grams. The case of one is called a unigram, two is bigram, three is trigram, and so on.
+
+Tidy Text makes this easy for us to do.
+
+```{r educate_gram}
+poly_bigrams <- polyrating %>%
+  unnest_tokens(bigram, review, token ="ngrams", n = 2) %>%
+  select(bigram, everything())
+
+poly_bigrams %>%
+  select(bigram, agg_rating, subject) %>%
+  tail()
+```
+
+Similarily to what we did with unigrams let's look at the term frequencies of the PolyRating bigrams.
+
+```{r educate_gram_coumt}
+poly_bigrams %>%
+  count(bigram, sort = TRUE)
+```
+
+This suffers the same issues as using the term frequencies of unigrams, the existance of simple conjuctions that don't tell us much.
+
+
+Now let's remove the stop words from the bigrams.
+
+```{r educate_gram_stop}
+bigrams_separated <- poly_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+bigrams_filtered <- bigrams_separated %>%
+  filter(!word1 %in% custom_stop_words$word) %>%
+  filter(!word2 %in% custom_stop_words$word)
+
+bigram_counts <- bigrams_filtered %>% 
+  count(word1, word2, sort = TRUE)
+
+bigrams_united <- bigrams_filtered %>%
+  unite(bigram, word1, word2, sep = " ")
+
+bigrams_united
+```
+
+We can do this for trigrams as well. 
+
+```{r educate_tri_filter}
+trigrams_filtered <- polyrating %>%
+  unnest_tokens(trigram, review, token = "ngrams", n = 3) %>%
+  separate(trigram, c("word1", "word2", "word3"), sep = " ") %>%
+  filter(!word1 %in%  custom_stop_words$word,
+         !word2 %in% custom_stop_words$word,
+         !word3 %in% custom_stop_words$word) %>%
+  select(word1,word2,word3,everything())
+
+trigrams_filtered %>%
+  select(word1, word2, word3, prof_name)
+```
+
+We can even use TF-IDF on n-grams.
+
+```{r educate_bi_senti}
+bigram_tf_idf <- bigrams_united %>%
+  count(subject, bigram) %>%
+  bind_tf_idf(bigram, subject, n) %>%
+  arrange(desc(tf_idf))
+
+bigram_tf_idf
+```
+
+..and then see the top tf-idf bigrams for each COSAM section.
+
+```{r cosam_bi_graphs, message=FALSE, warning=FALSE}
+bigram_tf_idf %>%
+  filter(subject %in% c("MATH","STAT","CHEM","PHYS","BIO","LS")) %>%
+  group_by(subject) %>% 
+  top_n(5) %>% 
+  mutate(bigram = fct_reorder(bigram, n)) %>%
+  ungroup() %>%
+  ggplot(aes(bigram, tf_idf, fill = subject)) +
+    geom_col(show.legend = FALSE) +
+    labs(x = NULL, y = "tf-idf") +
+    facet_wrap(~subject, ncol = 2, scales = "free") +
+    coord_flip()
+```
+
+### Negation
+
+Let's examine negation using AFINN and bigrams.
+
+Let's get AFINN.
+
+```{r get_negation_AFINN}
+AFINN <- get_sentiments("afinn")
+
+AFINN
+```
+
+Now let's get the "not" bigrams.
+
+```{r get_not_words}
+not_words <- bigrams_separated %>%
+  filter(word1 == "not") %>%
+  inner_join(AFINN, by = c(word2 = "word")) %>%
+  count(word2, score, sort = TRUE) %>%
+  ungroup()
+
+not_words
+```
+
+We can also now visualize the sentiment of these bigrams, by taking the opposite of the word following "not" and using the opposite sign.
+
+```{r graph_not_words} 
+not_words %>%
+  mutate(contribution = n * score) %>%
+  arrange(desc(abs(contribution))) %>%
+  head(20) %>%
+  mutate(word2 = reorder(word2, contribution)) %>%
+  ggplot(aes(word2, -n * score, fill = n * score > 0)) +
+  geom_col(show.legend = FALSE) +
+  xlab("Words preceded by \"not\"") +
+  ylab("Sentiment score * number of occurrences") +
+  coord_flip()
+```
+
+## Acknowledements
+
+Thank you to the creators of Tidy Text for making a great package! 
+
+
+
+
+
+
+
+

@@ -20,12 +20,6 @@ library(modelr)
 nutrition <- read.csv("https://dropbox.com/s/ucwls7j3zlb5sas/cereal.csv?dl=1")
 ```
 
-```{r}
-##### delete 
-nutrition %>% 
-  filter(potass < 0)
-```
-
 # Part One
 1. 
 ```{r}
@@ -39,11 +33,6 @@ adjust_cereal <- function(measurement, num_cups, weight, string) {
 }
 ```
 
-```{r}
-##### delete
-#adjust_cereal(100, 0.75, 1.3, "weight")
-#nutrition
-```
 
 2. 
 ```{r}
@@ -64,6 +53,7 @@ nutrition <- nutrition %>%
 ### see if there is a better way of doing this without code repetition
 ```
 
+
 # Part Two
 1. 
 a. 
@@ -71,6 +61,7 @@ a.
 nutrition <- nutrition %>% 
   mutate(
     Seed_Type = as.factor(case_when(
+      # str_extract will extract the first matching word 
       str_extract(tolower(name), "wheat|oat|bran") == "wheat" ~ "wheat",
       str_extract(tolower(name), "wheat|oat|bran") == "oat" ~ "oat",
       str_extract(tolower(name), "wheat|oat|bran") == "bran" ~ "bran",
@@ -78,6 +69,7 @@ nutrition <- nutrition %>%
     )
   ))
 
+# reordering the factor levels
 levels(nutrition$Seed_Type) <- c("wheat", "oat", "bran", "unknown")
 ```
 
@@ -92,6 +84,7 @@ nutrition %>%
   filter(substance %in% c("carbo", "fat", "fiber", "potass")) %>% 
   ggplot(aes(x=Seed_Type, y=avg_amount)) + geom_col() + facet_wrap(~ substance, scales="free")
 ```
+
 From the plots above, we see that wheat cereals are better in most ways, including low in carbs and fats, and high in fiber and potassium. 
 
 c. 
@@ -104,12 +97,14 @@ nutrition %>%
   filter(substance %in% c("carbo", "protein")) %>% 
   ggplot(aes(x=Seed_Type, y=avg_amount)) + geom_col() + facet_wrap(~ substance, scales="free")
 ```
-From the plot above, we can see that oats are high in low in carbs and the highest in average protein per serving. 
+
+From the plot above, we can see that oats are low in average carbs and the highest in average protein per serving. 
 
 
 2. 
 a. 
 ```{r}
+# sugars has already been adjusted to serving size is per cup
 nrow(nutrition %>% filter(sugars < 6))
 ```
 You would only be allowd to eat 26 of the cereals in the dataset. 
@@ -150,15 +145,12 @@ a.
 # get vector of ratings for General Mills
 g_ratings <- nutrition %>% 
   filter(mfr == "G") %>% 
-  select(rating) %>% pull()
+  pull(rating)
 
 # get vector of ratings for Kellog
 k_ratings <- nutrition %>% 
   filter(mfr == "K") %>% 
-  select(rating) %>% pull()
-
-# mean(g_ratings)
-# mean(k_ratings)
+  pull(rating)
 ```
 
 
@@ -181,21 +173,21 @@ Kellog has a higher percent of good cereals in this data set.
 
 c. 
 ```{r}
+set.seed(37)
 kellog_boots <- replicate(1000, sample(k_ratings, replace = TRUE), simplify = FALSE)
 
 gm_boots <- replicate(1000, sample(g_ratings, replace = TRUE), simplify = FALSE)
 ```
 
 ```{r}
-manufacturers <- data.frame(
-    kellog_good_cereals = map_dbl(kellog_boots, ~sum(. > 50)),
-    gm_good_cereals = map_dbl(gm_boots, ~sum(. > 50))
-  )
+kellog_good_cereals = map_dbl(kellog_boots, ~sum(. > 50))
+gm_good_cereals = map_dbl(gm_boots, ~sum(. > 50))
 ```
 
 ```{r}
-map(manufacturers, print)
+sum(unlist(map(kellog_good_cereals > gm_good_cereals, as.integer)))
 ```
+914 of 1000 times, Kellog has more good cereals than General Mills. The difference I saw in (b) is not statistically significant, because Kellog had more good cereals than GM only 91.4% of the time. We cannot quite be 95% confident that Kellog Cereals have a higher percent of good cereals. 
 
 
 

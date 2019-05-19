@@ -1,0 +1,93 @@
+---
+title: "Tidy Text"
+author: "Anish Yakkala, Lemar Popal, Brooke Hanna, Michal Golovanevsky"
+date: "3/7/2019"
+output: 
+  rmarkdown::html_vignette:
+    fig_width: 7
+    fig_height: 5
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Tidy Text}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(lubridate)
+
+polyrating <- read_csv(
+  "https://raw.githubusercontent.com/ayakkala1/stat_final/master/vignettes/polyrating.csv"
+                      ) %>% 
+                mutate(date = parse_date_time(date,"%m%y")) %>%
+                drop_na()
+```
+
+```{r}
+tokens1 <- polyrating %>%
+  unnest_tokens(word,review)
+
+```
+
+```{r}
+year_counts <- polyrating %>%
+  unnest_tokens(word,review) %>%
+  select(word,everything()) %>%
+  count(date, word, subject) %>%
+  complete(date, word, fill = list(n = 0)) 
+
+year_totals <- year_counts %>%
+  group_by(date, subject) %>%
+  summarize(year_total = sum(n))
+
+# year_counts %>%
+#   left_join(year_totals, by = "date") %>%
+#         filter(subject %in% c("STAT","MATH")) %>%
+#         filter(word %in% c("she","he")) %>%
+#         ggplot(aes(date, n / year_total,fill = word, color = word:subject))+
+#         geom_point() +
+#         geom_smooth() +
+#         scale_y_continuous(labels = scales::percent_format()) +
+#         ylab("% frequency of word in review") +
+#         xlab(element_blank())
+```
+
+```{r}
+read_csv("https://raw.githubusercontent.com/ayakkala1/stat_final/master/unique_poly.csv")$word
+```
+
+```{r}
+year_counts <- polyrating %>%
+  unnest_tokens(word,review) %>%
+  select(word,everything()) %>%
+  count(date, word) %>%
+  complete(date, word, fill = list(n = 0)) 
+
+year_totals <- year_counts %>%
+  group_by(date) %>%
+  summarize(year_total = sum(n))
+
+year_counts %>%
+  left_join(year_totals, by = "date") %>%
+  filter(word %in% c("she","he")) %>%
+  ggplot(aes(date, n / year_total,fill = word)) +
+  geom_point() +
+  geom_smooth() +
+  scale_y_continuous(labels = scales::percent_format()) +
+  ylab("% frequency of word in review") +
+  xlab(element_blank())
+```
+
+
+
+
+
+
+
+
+
